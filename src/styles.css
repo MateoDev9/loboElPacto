@@ -280,3 +280,89 @@ h1 em { font-weight: 400; color: #d6aa60; }
   .phase-copy { font-size: 14px; }
   .alive-strip { padding-inline: 15px; }
 }
+
+/* Guided game layout */
+.game-content { width: min(1080px, calc(100% - 32px)); }
+.turn-heading { max-width: 760px; margin: 0 auto 28px; display: grid; grid-template-columns: 74px 1fr; align-items: center; gap: 22px; text-align: left; }
+.turn-heading .phase-icon { margin: 0; }
+.turn-heading .eyebrow { margin: 0 0 8px; }
+.turn-heading h2 { margin: 0; font-size: clamp(34px, 5vw, 52px); }
+.turn-heading .phase-copy { max-width: none; margin: 10px 0 0; }
+.night-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 430px; align-items: start; gap: 22px; }
+.night-interaction { min-width: 0; padding: 22px; border: 1px solid rgba(255,255,255,.11); border-radius: 13px; background: rgba(255,255,255,.025); }
+.night-map-panel { position: sticky; top: 82px; min-width: 0; }
+.night-map-panel .chorus-map { width: 100%; height: 330px; margin: 0; }
+.intro-map { max-width: 700px; margin: 0 auto; }
+.chorus-toggle { display: none; }
+.clockwise-label { flex: 0 0 auto; color: #607169; font-size: 11px; font-weight: 700; }
+.seating-order > div:first-child > div { display: grid; gap: 3px; }
+.seating-order > div:first-child > div small { color: #838a85; font-size: 11px; }
+.rule-card { margin: 16px 0; padding: 16px 18px; color: #d9e1dc; text-align: left; border: 1px solid rgba(213,170,89,.22); border-radius: 10px; background: rgba(213,170,89,.07); }
+.rule-card > strong { display: block; color: #e3bd73; }
+.rule-card p { margin: 6px 0 0; color: #aeb9b2; font-size: 13px; line-height: 1.55; }
+.day .rule-card { color: #27342c; border-color: rgba(79,105,88,.18); background: rgba(255,255,255,.4); }
+.day .rule-card > strong { color: #315f46; }
+.day .rule-card p { color: #68736c; }
+.toggle-card { width: 100%; min-height: 82px; margin: 12px 0; display: grid; grid-template-columns: 42px 1fr 24px; align-items: center; gap: 12px; padding: 14px 16px; color: inherit; text-align: left; border: 1px solid rgba(255,255,255,.14); border-radius: 10px; background: rgba(255,255,255,.04); }
+.toggle-card > span { font-size: 25px; }
+.toggle-card strong, .toggle-card small { display: block; }
+.toggle-card small { margin-top: 4px; color: #9faba3; line-height: 1.4; }
+.toggle-card.selected { border-color: #d9ad5a; background: rgba(217,173,90,.12); box-shadow: inset 0 0 0 1px rgba(217,173,90,.5); }
+.toggle-card:disabled { opacity: .48; }
+.day .toggle-card { border-color: rgba(20,30,23,.14); background: rgba(255,255,255,.36); }
+.day .toggle-card small { color: #6e7871; }
+.choice-select { display: grid; gap: 9px; margin: 18px 0; text-align: left; }
+.choice-select > span { color: #d9e2dc; font-family: Georgia, serif; font-size: 18px; }
+.choice-select > div { position: relative; display: flex; align-items: center; border: 1px solid rgba(255,255,255,.15); border-radius: 9px; background: #1a261f; }
+.choice-select select { width: 100%; min-height: 48px; padding: 0 42px 0 14px; color: #eeeadd; border: 0; outline: 0; appearance: none; background: transparent; }
+.choice-select option { color: #1c281f; }
+.choice-select svg { position: absolute; right: 13px; pointer-events: none; }
+.group-assignment { display: grid; gap: 7px; margin-top: 18px; padding: 16px; text-align: left; border: 1px solid rgba(255,255,255,.13); border-radius: 10px; background: rgba(255,255,255,.025); }
+.group-assignment > div:first-child { display: grid; gap: 4px; margin-bottom: 5px; }
+.group-assignment > div:first-child small { color: #9eaaa2; }
+.group-row { display: grid; grid-template-columns: 1fr 88px 88px; align-items: center; gap: 6px; }
+.group-row button { min-height: 36px; color: inherit; border: 1px solid rgba(255,255,255,.13); border-radius: 7px; background: rgba(255,255,255,.04); }
+.group-row button.selected { color: #fff3dc; border-color: #d8aa56; background: rgba(216,170,86,.15); }
+.optional-note, .action-warning { margin: -14px 0 18px; color: #92a097; font-size: 11px; }
+.skip-action { display: flex; align-items: center; justify-content: center; gap: 7px; margin: -12px auto 18px; padding: 8px 12px; color: #b8c2bb; border: 1px solid rgba(255,255,255,.12); border-radius: 7px; background: transparent; }
+.decision-cards { max-width: 720px; margin: 22px auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.decision-cards button { min-height: 145px; display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 4px 12px; padding: 19px; color: inherit; text-align: left; border: 1px solid rgba(20,30,23,.14); border-radius: 12px; background: rgba(255,255,255,.38); }
+.decision-cards button > span { grid-row: 1 / 3; font-size: 29px; }
+.decision-cards button strong, .decision-cards button small { display: block; }
+.decision-cards button small { color: #6d776f; line-height: 1.45; }
+.day-summary { max-width: 720px; margin: 12px auto 24px; display: grid; gap: 10px; }
+.morning-card { display: grid; grid-template-columns: 44px 1fr; align-items: center; gap: 12px; padding: 16px; text-align: left; border: 1px solid rgba(20,30,23,.13); border-radius: 10px; background: rgba(255,255,255,.35); }
+.morning-card > span { font-size: 27px; }
+.morning-card strong, .morning-card small { display: block; }
+.morning-card small { margin-top: 3px; color: #6f7972; }
+.morning-card.danger { border-color: rgba(160,67,52,.32); background: rgba(185,76,57,.08); }
+.morning-card.safe { border-color: rgba(57,118,79,.25); }
+.button-outline { color: inherit; border: 1px solid currentColor; background: transparent; }
+
+@media (max-width: 760px) {
+  .game-content { width: min(100% - 24px, 620px); padding: 22px 0 32px; }
+  .turn-heading { grid-template-columns: 50px 1fr; gap: 13px; margin-bottom: 16px; }
+  .turn-heading .phase-icon { width: 50px; height: 50px; }
+  .turn-heading .eyebrow { margin-bottom: 4px; font-size: 10px; }
+  .turn-heading h2, .game-content h2 { font-size: 28px; line-height: 1.08; }
+  .turn-heading .phase-copy { margin-top: 6px; font-size: 12px; line-height: 1.45; }
+  .chorus-toggle { width: 100%; min-height: 42px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 7px; color: #d8e1db; border: 1px solid rgba(255,255,255,.13); border-radius: 8px; background: rgba(255,255,255,.04); }
+  .night-workspace { display: block; }
+  .night-interaction { padding: 13px; }
+  .night-map-panel { display: none; position: static; margin-top: 12px; }
+  .night-map-panel.show { display: block; }
+  .night-map-panel .chorus-map { height: 270px; }
+  .intro-map .chorus-map { height: 270px; margin-block: 14px; }
+  .discovery-box { margin: 8px 0 12px; padding: 12px; }
+  .who-wakes { margin-top: 8px; }
+  .picker { margin: 17px 0; }
+  .picker h3 { font-size: 17px; }
+  .picker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .game-action { margin-top: 18px; }
+  .game-action .button { width: 100%; min-width: 0; }
+  .decision-cards { grid-template-columns: 1fr; }
+  .group-row { grid-template-columns: 1fr 74px 74px; }
+  .clockwise-label { display: none; }
+  .seating-order > div:first-child { align-items: flex-start; }
+  .witch-actions { margin-top: 16px; }
+}

@@ -1,6 +1,6 @@
 import type { GameState } from './types'
 
-const STORAGE_KEY = 'lobo-narrador-active-game-v4'
+const STORAGE_KEY = 'lobo-narrador-active-game-v5'
 const PEOPLE_KEY = 'lobo-narrador-people-library-v4'
 
 export function saveGame(game: GameState) {
