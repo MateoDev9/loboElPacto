@@ -50,8 +50,8 @@ const FIRST_NIGHT_DISCOVERY_ORDER: Partial<Record<RoleId, number>> = {
   two_sisters: 25, three_brothers: 26, stuttering_judge: 30, elder: 34, hunter: 35,
   rusty_knight: 36, bear_tamer: 37, pure_villager: 38, little_girl: 39, scapegoat: 40,
   village_fool: 41, devoted_servant: 42, angel: 43, raven: 45, pyromaniac: 46,
-  fox: 50, protector: 55, werewolf: 60, infect_father: 65, fierce_wolf: 70,
-  albino_wolf: 75, witch: 80, flutist: 90, seer: 999,
+  protector: 55, werewolf: 60, infect_father: 65, fierce_wolf: 70,
+  albino_wolf: 75, witch: 80, flutist: 90, fox: 998, seer: 999,
 }
 
 export function recommendedRoles(playerCount: number): RoleId[] {
