@@ -119,8 +119,8 @@ function PlayersSetup({ people, names, setNames, addPerson, onBack, onNext }: { 
     <div className="panel player-panel"><div className="panel-title"><span>Biblioteca</span><span className="count-pill">{names.length} seleccionadas</span></div>
       <div className="people-grid">{people.map((name) => <button key={name} className={names.includes(name) ? 'selected' : ''} onClick={() => toggle(name)}><span className="avatar">{name[0].toUpperCase()}</span><strong>{name}</strong>{names.includes(name) && <Check size={17} />}</button>)}</div>
       {!people.length && <p className="empty-state">Añade a tu grupo habitual para empezar.</p>}
-      {names.length > 0 && <div className="seating-order"><div><div><strong>Orden real del coro</strong><small>Toca dos asientos seguidos para intercambiarlos. Asígnelos en el orden real (sentido horario).</small></div><span className="clockwise-label">↻ Horario</span></div>
-        <div className="chorus-setup-map"><SeatingCircle players={names.map((name, i) => ({ id: i.toString(), name, alive: true }))} awakeIds={selectedSeatIndex !== null ? [selectedSeatIndex.toString()] : []} targetIds={[]} round={1} onSeatClick={(id) => handleSeatClick(parseInt(id, 10))} /></div>
+      {names.length > 0 && <div className="seating-order"><div><div><strong>Orden real del coro</strong><small>{selectedSeatIndex === null ? 'Toca un asiento y después otro para intercambiarlos. Colócalos en sentido horario.' : `Asiento ${selectedSeatIndex + 1} seleccionado · toca otro para intercambiarlo.`}</small></div><span className="clockwise-label">↻ Horario</span></div>
+        <div className="chorus-setup-map"><SeatingCircle variant="setup" players={names.map((name, i) => ({ id: i.toString(), name, alive: true }))} awakeIds={[]} selectedIds={selectedSeatIndex !== null ? [selectedSeatIndex.toString()] : []} targetIds={[]} round={1} onSeatClick={(id) => handleSeatClick(parseInt(id, 10))} /></div>
       </div>}
       <div className="inline-add"><small>¿Falta alguien? Se guardará también en la biblioteca.</small><PersonAdder addPerson={addPerson} onAdded={(name) => setNames([...names, name])} /></div>
     </div>
@@ -362,13 +362,13 @@ function DaySummary({ game }: { game: GameState }) {
   </div>
 }
 
-function SeatingCircle({ players, awakeIds, targetIds, wolfVictimId, protectedId, round, onSeatClick }: { players: Player[]; awakeIds: string[]; targetIds: string[]; wolfVictimId?: string; protectedId?: string; round: number; onSeatClick?: (id: string) => void }) {
-  const mapHeight = Math.max(380, players.length * 48)
+function SeatingCircle({ players, awakeIds, selectedIds = [], targetIds, wolfVictimId, protectedId, round, onSeatClick, variant = 'night' }: { players: Player[]; awakeIds: string[]; selectedIds?: string[]; targetIds: string[]; wolfVictimId?: string; protectedId?: string; round: number; onSeatClick?: (id: string) => void; variant?: 'night' | 'setup' }) {
+  const mapHeight = variant === 'setup' ? Math.max(420, Math.ceil(players.length / 2) * 76 + 108) : Math.max(380, players.length * 48)
   const W_px = 620 * 0.8
   const H_px = mapHeight * 0.75
   const P = 2 * (W_px + H_px)
 
-  return <div className="chorus-map" style={{ '--map-height': `${mapHeight}px` } as React.CSSProperties} aria-label="Ubicación de las personas en el coro"><div className="chorus-center"><Moon size={18} /><strong>Coro</strong><small>Noche {round}</small></div>{players.map((player, index) => {
+  return <div className={`chorus-map ${variant === 'setup' ? 'chorus-map--setup' : ''}`.trim()} style={{ '--map-height': `${mapHeight}px` } as React.CSSProperties} aria-label="Ubicación de las personas en el coro"><div className="chorus-center"><Moon size={18} /><strong>Coro</strong><small>{variant === 'setup' ? 'Orden de asientos' : `Noche ${round}`}</small></div>{players.map((player, index) => {
     const d = (index / players.length) * P
     let x = 0, y = 0
     if (d <= W_px / 2) {
@@ -386,13 +386,12 @@ function SeatingCircle({ players, awakeIds, targetIds, wolfVictimId, protectedId
     const xFrac = x / W_px
     const yFrac = y / H_px
     // Padding: 10px horizontal, 20px vertical
-    const style = { 
-      left: `calc(65px + (100% - 130px) * ${xFrac})`, 
-      top: `calc(55px + (100% - 110px) * ${yFrac})` 
-    }
+    const style = variant === 'setup'
+      ? { gridColumn: `${(index % 2) + 1}`, gridRow: `${Math.floor(index / 2) + 1}` }
+      : { left: `calc(65px + (100% - 130px) * ${xFrac})`, top: `calc(55px + (100% - 110px) * ${yFrac})` }
 
-    const classes = ['chorus-seat', awakeIds.includes(player.id) ? 'awake' : '', targetIds.includes(player.id) ? 'targeted' : '', wolfVictimId === player.id ? 'victim' : '', protectedId === player.id ? 'protected' : '', !player.alive ? 'dead' : '', onSeatClick ? 'clickable' : ''].filter(Boolean).join(' ')
-    const states = [awakeIds.includes(player.id) ? 'despierto' : '', targetIds.includes(player.id) ? 'objetivo' : '', wolfVictimId === player.id ? 'víctima' : '', protectedId === player.id ? 'protegido' : '', !player.alive ? 'eliminado' : ''].filter(Boolean)
+    const classes = ['chorus-seat', awakeIds.includes(player.id) ? 'awake' : '', selectedIds.includes(player.id) ? 'seat-selected' : '', targetIds.includes(player.id) ? 'targeted' : '', wolfVictimId === player.id ? 'victim' : '', protectedId === player.id ? 'protected' : '', !player.alive ? 'dead' : '', onSeatClick ? 'clickable' : ''].filter(Boolean).join(' ')
+    const states = [awakeIds.includes(player.id) ? 'despierto' : '', selectedIds.includes(player.id) ? 'seleccionado' : '', targetIds.includes(player.id) ? 'objetivo' : '', wolfVictimId === player.id ? 'víctima' : '', protectedId === player.id ? 'protegido' : '', !player.alive ? 'eliminado' : ''].filter(Boolean)
     return <button className={classes} style={style} key={player.id} title={player.name} onClick={() => onSeatClick?.(player.id)} aria-label={`Asiento ${index + 1}: ${player.name}${states.length ? `, ${states.join(', ')}` : ''}`}><span className="seat-number">{index + 1}</span><strong>{player.name}</strong>{player.roleId && <RoleArtwork roleId={player.roleId} className="seat-role-art" />}</button>
   })}</div>
 }
