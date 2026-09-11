@@ -363,7 +363,8 @@ function DaySummary({ game }: { game: GameState }) {
 }
 
 function SeatingCircle({ players, awakeIds, targetIds, wolfVictimId, protectedId, round, onSeatClick }: { players: Player[]; awakeIds: string[]; targetIds: string[]; wolfVictimId?: string; protectedId?: string; round: number; onSeatClick?: (id: string) => void }) {
-  return <div className="chorus-map" aria-label="Ubicación de las personas en el coro"><div className="chorus-center"><Moon size={18} /><strong>Coro</strong><small>Noche {round}</small></div>{players.map((player, index) => {
+  const mapHeight = Math.max(380, players.length * 48)
+  return <div className="chorus-map" style={{ '--map-height': `${mapHeight}px` } as React.CSSProperties} aria-label="Ubicación de las personas en el coro"><div className="chorus-center"><Moon size={18} /><strong>Coro</strong><small>Noche {round}</small></div>{players.map((player, index) => {
     const angle = -Math.PI / 2 + (Math.PI * 2 * index) / players.length
     const style = { left: `${50 + Math.cos(angle) * 40}%`, top: `${50 + Math.sin(angle) * 40}%` }
     const classes = ['chorus-seat', awakeIds.includes(player.id) ? 'awake' : '', targetIds.includes(player.id) ? 'targeted' : '', wolfVictimId === player.id ? 'victim' : '', protectedId === player.id ? 'protected' : '', !player.alive ? 'dead' : '', onSeatClick ? 'clickable' : ''].filter(Boolean).join(' ')
