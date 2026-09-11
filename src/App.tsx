@@ -383,7 +383,14 @@ function SeatingCircle({ players, awakeIds, targetIds, wolfVictimId, protectedId
       x = d - (W_px / 2 + 2 * H_px + W_px); y = 0
     }
 
-    const style = { left: `${10 + (x / W_px) * 80}%`, top: `${12.5 + (y / H_px) * 75}%` }
+    const xFrac = x / W_px
+    const yFrac = y / H_px
+    // Padding: 10px horizontal, 20px vertical
+    const style = { 
+      left: `calc(65px + (100% - 130px) * ${xFrac})`, 
+      top: `calc(55px + (100% - 110px) * ${yFrac})` 
+    }
+
     const classes = ['chorus-seat', awakeIds.includes(player.id) ? 'awake' : '', targetIds.includes(player.id) ? 'targeted' : '', wolfVictimId === player.id ? 'victim' : '', protectedId === player.id ? 'protected' : '', !player.alive ? 'dead' : '', onSeatClick ? 'clickable' : ''].filter(Boolean).join(' ')
     const states = [awakeIds.includes(player.id) ? 'despierto' : '', targetIds.includes(player.id) ? 'objetivo' : '', wolfVictimId === player.id ? 'víctima' : '', protectedId === player.id ? 'protegido' : '', !player.alive ? 'eliminado' : ''].filter(Boolean)
     return <button className={classes} style={style} key={player.id} title={player.name} onClick={() => onSeatClick?.(player.id)} aria-label={`Asiento ${index + 1}: ${player.name}${states.length ? `, ${states.join(', ')}` : ''}`}><span className="seat-number">{index + 1}</span><strong>{player.name}</strong>{player.roleId && <RoleArtwork roleId={player.roleId} className="seat-role-art" />}</button>
