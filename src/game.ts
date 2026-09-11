@@ -131,11 +131,12 @@ function nearestAliveWolf(game: GameState, fromId: string, direction: -1 | 1) {
 }
 
 function finishDeaths(game: GameState): GameState {
-  if (game.pendingHunters.length) return { ...game, phase: 'hunter-action' }
+  if (game.pendingHunters.length && game.postDeathAction !== 'night-result') return { ...game, phase: 'hunter-action' }
   const winner = determineWinner(game)
   if (winner) return { ...game, winner, phase: 'game-over', postDeathAction: undefined }
   if (game.postDeathAction === 'night-result') return { ...game, phase: 'night-result', postDeathAction: undefined }
   if (game.postDeathAction === 'second-vote') return { ...game, phase: 'day-vote', postDeathAction: undefined, pendingVoteTargetId: undefined, judgeSecondVoteRequested: false, judgeSecondVoteActive: true }
+  if (game.pendingHunters.length) return { ...game, phase: 'hunter-action' }
   return prepareNextNight({ ...game, postDeathAction: undefined })
 }
 

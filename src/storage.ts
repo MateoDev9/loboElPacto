@@ -32,3 +32,18 @@ export function loadPeople(): string[] {
 export function savePeople(people: string[]) {
   localStorage.setItem(PEOPLE_KEY, JSON.stringify(people))
 }
+
+const LAST_GROUP_KEY = 'lobo-narrador-last-group-v1'
+
+export function loadLastGroup(): string[] {
+  try {
+    const value = localStorage.getItem(LAST_GROUP_KEY)
+    return value ? JSON.parse(value) as string[] : []
+  } catch {
+    return []
+  }
+}
+
+export function saveLastGroup(names: string[]) {
+  localStorage.setItem(LAST_GROUP_KEY, JSON.stringify(names))
+}

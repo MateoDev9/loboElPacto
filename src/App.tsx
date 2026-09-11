@@ -9,7 +9,7 @@ import {
   resolveHunterShot, resolveScapegoat, resolveServantChoice,
 } from './game'
 import { CATEGORY_LABELS, isWolfRole, recommendedRoles, ROLE_LIST, ROLES } from './roles'
-import { clearGame, loadGame, loadPeople, saveGame, savePeople } from './storage'
+import { clearGame, loadGame, loadLastGroup, loadPeople, saveGame, saveLastGroup, savePeople } from './storage'
 import type { GameState, Player, RoleCategory, RoleId, SetupStep, Winner } from './types'
 
 type Screen = 'home' | 'library' | 'setup' | 'game'
@@ -34,7 +34,7 @@ function App() {
 
   const resetSetup = () => { setNames([]); setDeck([]); setSetupStep('players'); setScreen('setup') }
   const goToRoles = () => { setDeck(recommendedRoles(names.length)); setSetupStep('roles') }
-  const startGame = () => { setGame(createGame(names, deck)); setScreen('game') }
+  const startGame = () => { setGame(createGame(names, deck)); saveLastGroup(names); setScreen('game') }
   const endGame = () => { clearGame(); setGame(null); setScreen('home') }
 
   if (screen === 'library') return <PeopleLibrary people={people} addPerson={addPerson} removePerson={(name) => setPeople(people.filter((person) => person !== name))} onBack={() => setScreen('home')} />
@@ -80,20 +80,31 @@ function PeopleLibrary({ people, addPerson, removePerson, onBack }: { people: st
 }
 
 function PlayersSetup({ people, names, setNames, addPerson, onBack, onNext }: { people: string[]; names: string[]; setNames: (names: string[]) => void; addPerson: (name: string) => boolean; onBack: () => void; onNext: () => void }) {
+  const [selectedSeatIndex, setSelectedSeatIndex] = useState<number | null>(null)
   const toggle = (name: string) => setNames(names.includes(name) ? names.filter((person) => person !== name) : [...names, name])
-  const move = (index: number, direction: -1 | 1) => {
-    const nextIndex = index + direction
-    if (nextIndex < 0 || nextIndex >= names.length) return
-    const reordered = [...names]
-    ;[reordered[index], reordered[nextIndex]] = [reordered[nextIndex], reordered[index]]
-    setNames(reordered)
+  const handleSeatClick = (index: number) => {
+    if (selectedSeatIndex === null) {
+      setSelectedSeatIndex(index)
+    } else {
+      if (selectedSeatIndex !== index) {
+        const reordered = [...names]
+        ;[reordered[selectedSeatIndex], reordered[index]] = [reordered[index], reordered[selectedSeatIndex]]
+        setNames(reordered)
+      }
+      setSelectedSeatIndex(null)
+    }
   }
+  const lastGroup = useMemo(() => loadLastGroup(), [])
+  const canReuse = lastGroup.length >= 5 && names.length === 0 && lastGroup.every(name => people.includes(name))
   return <main className="app-shell"><PageHeader step="Paso 1 de 2" onBack={onBack} /><section className="setup-wrap">
-    <div className="section-heading"><p className="eyebrow">Reúne a la aldea</p><h2>¿Quién juega hoy?</h2><p>Selecciona al menos 5 personas. Después ordénalas tal y como están sentadas ahora, empezando por cualquier asiento y siguiendo en sentido horario.</p></div>
+    <div className="section-heading"><p className="eyebrow">Reúne a la aldea</p><h2>¿Quién juega hoy?</h2><p>Selecciona al menos 5 personas. Después ordénalas en el coro intercambiando sus asientos (toca una y luego otra).</p></div>
+    {canReuse && <button className="button button-secondary button-large reuse-button" onClick={() => setNames([...lastGroup])}>✨ Juegan los de la partida anterior</button>}
     <div className="panel player-panel"><div className="panel-title"><span>Biblioteca</span><span className="count-pill">{names.length} seleccionadas</span></div>
       <div className="people-grid">{people.map((name) => <button key={name} className={names.includes(name) ? 'selected' : ''} onClick={() => toggle(name)}><span className="avatar">{name[0].toUpperCase()}</span><strong>{name}</strong>{names.includes(name) && <Check size={17} />}</button>)}</div>
       {!people.length && <p className="empty-state">Añade a tu grupo habitual para empezar.</p>}
-      {names.length > 0 && <div className="seating-order"><div><div><strong>Orden real de los asientos</strong><small>Colócalos aquí como ya están sentados; nadie tiene que cambiarse de sitio.</small></div><span className="clockwise-label">↻ Sentido horario</span></div><ol>{names.map((name, index) => <li key={name}><span>{index + 1}</span><strong>{name}</strong><div><button disabled={index === 0} onClick={() => move(index, -1)} aria-label={`Mover a ${name} hacia arriba`}><ArrowUp size={15} /></button><button disabled={index === names.length - 1} onClick={() => move(index, 1)} aria-label={`Mover a ${name} hacia abajo`}><ArrowDown size={15} /></button></div></li>)}</ol></div>}
+      {names.length > 0 && <div className="seating-order"><div><div><strong>Orden real del coro</strong><small>Toca dos asientos seguidos para intercambiarlos. Asígnelos en el orden real (sentido horario).</small></div><span className="clockwise-label">↻ Horario</span></div>
+        <div className="chorus-setup-map"><SeatingCircle players={names.map((name, i) => ({ id: i.toString(), name, alive: true }))} awakeIds={selectedSeatIndex !== null ? [selectedSeatIndex.toString()] : []} targetIds={[]} round={1} onSeatClick={(id) => handleSeatClick(parseInt(id, 10))} /></div>
+      </div>}
       <div className="inline-add"><small>¿Falta alguien? Se guardará también en la biblioteca.</small><PersonAdder addPerson={addPerson} onAdded={(name) => setNames([...names, name])} /></div>
     </div>
     <div className="sticky-action"><span>{names.length < 5 ? `Faltan ${5 - names.length} personas` : `${names.length} personas jugarán`}</span><button className="button button-primary" disabled={names.length < 5} onClick={onNext}>Elegir cartas <ArrowRight size={18} /></button></div>
@@ -245,7 +256,7 @@ function GameScreen({ game, setGame, onExit, onEnd }: { game: GameState; setGame
         <div className="night-workspace"><div className="night-interaction">{roleAction}</div><aside className={`night-map-panel ${showChorus ? 'show' : ''}`}><SeatingCircle players={game.players} awakeIds={roleOwners.map((player) => player.id)} targetIds={chorusTargets} wolfVictimId={currentRoleId === 'witch' ? game.night.wolfTargetId : undefined} protectedId={game.night.protectedTargetId} round={game.round} /></aside></div>
       </>}
       {game.phase === 'night-intro' && <><div className="intro-map"><SeatingCircle players={game.players} awakeIds={[]} targetIds={[]} round={game.round} /></div><div className="game-action"><button className="button button-light button-large" onClick={() => setGame(game.nightSequence.length ? { ...game, phase: 'role-call', sequenceIndex: 0 } : { ...game, phase: 'night-result' })}>{game.openingDay ? 'Ubicar al Ángel' : 'Empezar las llamadas'} <ArrowRight size={19} /></button></div></>}
-      {game.phase === 'night-result' && <><DaySummary game={game} /><div className="game-action morning-actions"><button className="button button-dark button-large" onClick={() => setGame({ ...game, phase: 'day-vote', pendingVoteTargetId: undefined })}>Abrir votación <Vote size={19} /></button><button className="button button-outline" onClick={() => setGame({ ...game, phase: 'day-discussion' })}>Empezar debate</button></div></>}
+      {game.phase === 'night-result' && <><DaySummary game={game} /><div className="game-action morning-actions">{game.pendingHunters.length > 0 ? <button className="button button-dark button-large" onClick={() => setGame({ ...game, phase: 'hunter-action' })}>🎯 El Cazador dispara</button> : <><button className="button button-dark button-large" onClick={() => setGame({ ...game, phase: 'day-vote', pendingVoteTargetId: undefined })}>Abrir votación <Vote size={19} /></button><button className="button button-outline" onClick={() => setGame({ ...game, phase: 'day-discussion' })}>Empezar debate</button></>}</div></>}
       {game.phase === 'day-discussion' && <div className="game-action"><button className="button button-dark button-large" onClick={() => setGame({ ...game, phase: 'day-vote', pendingVoteTargetId: undefined })}>Abrir votación <Vote size={19} /></button></div>}
       {game.phase === 'day-vote' && <VoteScreen game={game} setGame={setGame} />}
       {game.phase === 'hunter-action' && <><PlayerPicker players={alive} selected={[]} onSelect={(id) => setGame(resolveHunterShot(game, id))} label="Persona alcanzada por el disparo" /><p className="action-warning">Esta elección se aplica inmediatamente.</p></>}
@@ -334,13 +345,13 @@ function DaySummary({ game }: { game: GameState }) {
   </div>
 }
 
-function SeatingCircle({ players, awakeIds, targetIds, wolfVictimId, protectedId, round }: { players: Player[]; awakeIds: string[]; targetIds: string[]; wolfVictimId?: string; protectedId?: string; round: number }) {
+function SeatingCircle({ players, awakeIds, targetIds, wolfVictimId, protectedId, round, onSeatClick }: { players: Player[]; awakeIds: string[]; targetIds: string[]; wolfVictimId?: string; protectedId?: string; round: number; onSeatClick?: (id: string) => void }) {
   return <div className="chorus-map" aria-label="Ubicación de las personas en el coro"><div className="chorus-center"><Moon size={18} /><strong>Coro</strong><small>Noche {round}</small></div>{players.map((player, index) => {
     const angle = -Math.PI / 2 + (Math.PI * 2 * index) / players.length
     const style = { left: `${50 + Math.cos(angle) * 40}%`, top: `${50 + Math.sin(angle) * 40}%` }
-    const classes = ['chorus-seat', awakeIds.includes(player.id) ? 'awake' : '', targetIds.includes(player.id) ? 'targeted' : '', wolfVictimId === player.id ? 'victim' : '', protectedId === player.id ? 'protected' : '', !player.alive ? 'dead' : ''].filter(Boolean).join(' ')
+    const classes = ['chorus-seat', awakeIds.includes(player.id) ? 'awake' : '', targetIds.includes(player.id) ? 'targeted' : '', wolfVictimId === player.id ? 'victim' : '', protectedId === player.id ? 'protected' : '', !player.alive ? 'dead' : '', onSeatClick ? 'clickable' : ''].filter(Boolean).join(' ')
     const states = [awakeIds.includes(player.id) ? 'despierto' : '', targetIds.includes(player.id) ? 'objetivo' : '', wolfVictimId === player.id ? 'víctima' : '', protectedId === player.id ? 'protegido' : '', !player.alive ? 'eliminado' : ''].filter(Boolean)
-    return <div className={classes} style={style} key={player.id} title={player.name} aria-label={`Asiento ${index + 1}: ${player.name}${states.length ? `, ${states.join(', ')}` : ''}`}><span className="seat-number">{index + 1}</span><strong>{player.name}</strong>{player.roleId && <RoleArtwork roleId={player.roleId} className="seat-role-art" />}</div>
+    return <button className={classes} style={style} key={player.id} title={player.name} onClick={() => onSeatClick?.(player.id)} aria-label={`Asiento ${index + 1}: ${player.name}${states.length ? `, ${states.join(', ')}` : ''}`}><span className="seat-number">{index + 1}</span><strong>{player.name}</strong>{player.roleId && <RoleArtwork roleId={player.roleId} className="seat-role-art" />}</button>
   })}</div>
 }
 
