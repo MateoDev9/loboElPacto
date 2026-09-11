@@ -364,9 +364,26 @@ function DaySummary({ game }: { game: GameState }) {
 
 function SeatingCircle({ players, awakeIds, targetIds, wolfVictimId, protectedId, round, onSeatClick }: { players: Player[]; awakeIds: string[]; targetIds: string[]; wolfVictimId?: string; protectedId?: string; round: number; onSeatClick?: (id: string) => void }) {
   const mapHeight = Math.max(380, players.length * 48)
+  const W_px = 620 * 0.8
+  const H_px = mapHeight * 0.75
+  const P = 2 * (W_px + H_px)
+
   return <div className="chorus-map" style={{ '--map-height': `${mapHeight}px` } as React.CSSProperties} aria-label="Ubicación de las personas en el coro"><div className="chorus-center"><Moon size={18} /><strong>Coro</strong><small>Noche {round}</small></div>{players.map((player, index) => {
-    const angle = -Math.PI / 2 + (Math.PI * 2 * index) / players.length
-    const style = { left: `${50 + Math.cos(angle) * 40}%`, top: `${50 + Math.sin(angle) * 40}%` }
+    const d = (index / players.length) * P
+    let x = 0, y = 0
+    if (d <= W_px / 2) {
+      x = W_px / 2 + d; y = 0
+    } else if (d <= W_px / 2 + H_px) {
+      x = W_px; y = d - W_px / 2
+    } else if (d <= W_px / 2 + H_px + W_px) {
+      x = W_px - (d - (W_px / 2 + H_px)); y = H_px
+    } else if (d <= W_px / 2 + 2 * H_px + W_px) {
+      x = 0; y = H_px - (d - (W_px / 2 + H_px + W_px))
+    } else {
+      x = d - (W_px / 2 + 2 * H_px + W_px); y = 0
+    }
+
+    const style = { left: `${10 + (x / W_px) * 80}%`, top: `${12.5 + (y / H_px) * 75}%` }
     const classes = ['chorus-seat', awakeIds.includes(player.id) ? 'awake' : '', targetIds.includes(player.id) ? 'targeted' : '', wolfVictimId === player.id ? 'victim' : '', protectedId === player.id ? 'protected' : '', !player.alive ? 'dead' : '', onSeatClick ? 'clickable' : ''].filter(Boolean).join(' ')
     const states = [awakeIds.includes(player.id) ? 'despierto' : '', targetIds.includes(player.id) ? 'objetivo' : '', wolfVictimId === player.id ? 'víctima' : '', protectedId === player.id ? 'protegido' : '', !player.alive ? 'eliminado' : ''].filter(Boolean)
     return <button className={classes} style={style} key={player.id} title={player.name} onClick={() => onSeatClick?.(player.id)} aria-label={`Asiento ${index + 1}: ${player.name}${states.length ? `, ${states.join(', ')}` : ''}`}><span className="seat-number">{index + 1}</span><strong>{player.name}</strong>{player.roleId && <RoleArtwork roleId={player.roleId} className="seat-role-art" />}</button>
