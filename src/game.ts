@@ -14,7 +14,7 @@ export const createGame = (names: string[], deck: RoleId[]): GameState => {
     night: emptyNight(), nightSequence: openingDay ? ['angel'] : buildFirstNightSequence(deck), sequenceIndex: 0,
     healPotionAvailable: true, poisonPotionAvailable: true, infectionAvailable: true,
     pyromaniacAvailable: true, foxPowerAvailable: true, judgePowerAvailable: true,
-    judgeSecondVoteRequested: false, elderWolfHits: 0, villagePowersDisabled: false,
+    judgeSecondVoteRequested: false, judgeSecondVoteActive: false, elderWolfHits: 0, villagePowersDisabled: false,
     foolRevealed: false, lovers: [], charmedIds: [], infectedIds: [], wildChildTurned: false,
     actorUsedRoles: [], sectarianGroups: {}, wolfDeathsOccurred: false, pendingHunters: [],
     scapegoatVoters: [], lastDeaths: [],
@@ -81,7 +81,7 @@ export function applyThiefChoice(game: GameState, adoptedRole: RoleId): GameStat
   const players = game.players.map((player) => player.roleId === 'thief' ? { ...player, roleId: adoptedRole } : player)
   if (adoptedRole === 'thief' || adoptedRole === 'villager') return { ...game, players }
   const completed = game.nightSequence.slice(0, game.sequenceIndex + 1)
-  const desired = buildFirstNightSequence([...game.deck, adoptedRole])
+  const desired = buildFirstNightSequence([...game.deck, adoptedRole]).filter((roleId) => roleId !== 'angel' || game.openingDay)
   const remaining = desired.filter((roleId) => !completed.includes(roleId))
   return { ...game, players, nightSequence: [...completed, ...remaining] }
 }
@@ -109,6 +109,7 @@ export function prepareNextNight(game: GameState): GameState {
     nightSequence: firstNightAfterOpeningDay ? game.nightSequence : filteredNightSequence(game, round),
     sequenceIndex: 0,
     judgeSecondVoteRequested: false,
+    judgeSecondVoteActive: false,
     pendingVoteTargetId: undefined,
     pendingHunters: [],
     postDeathAction: undefined,
@@ -134,7 +135,7 @@ function finishDeaths(game: GameState): GameState {
   const winner = determineWinner(game)
   if (winner) return { ...game, winner, phase: 'game-over', postDeathAction: undefined }
   if (game.postDeathAction === 'night-result') return { ...game, phase: 'night-result', postDeathAction: undefined }
-  if (game.postDeathAction === 'second-vote') return { ...game, phase: 'day-vote', postDeathAction: undefined, pendingVoteTargetId: undefined, judgeSecondVoteRequested: false }
+  if (game.postDeathAction === 'second-vote') return { ...game, phase: 'day-vote', postDeathAction: undefined, pendingVoteTargetId: undefined, judgeSecondVoteRequested: false, judgeSecondVoteActive: true }
   return prepareNextNight({ ...game, postDeathAction: undefined })
 }
 
@@ -164,7 +165,7 @@ function applyDeaths(game: GameState, deaths: Array<{ playerId?: string; cause: 
 
     if (player.roleId === 'hunter' && !next.villagePowersDisabled && !next.pendingHunters.includes(player.id)) next.pendingHunters = [...next.pendingHunters, player.id]
     if (player.id === next.mentorId) next = { ...next, wildChildTurned: true }
-    if (player.roleId === 'rusty_knight' && wolfAttack) next = { ...next, rustyWolfDeathRound: next.round + 1 }
+    if (player.roleId === 'rusty_knight' && wolfAttack && !next.villagePowersDisabled) next = { ...next, rustyWolfDeathRound: next.round + 1 }
     if (next.lovers.includes(player.id)) {
       const partnerId = next.lovers.find((id) => id !== player.id)
       if (partnerId) queue.push({ playerId: partnerId, cause: 'love' })
@@ -223,7 +224,7 @@ export function advanceRoleCall(game: GameState): GameState {
 
 function finishVote(game: GameState, playerId: string): GameState {
   const target = game.players.find((player) => player.id === playerId)
-  const foolSurvives = target?.roleId === 'village_fool' && !game.foolRevealed
+  const foolSurvives = target?.roleId === 'village_fool' && !game.foolRevealed && !game.villagePowersDisabled
   const post: PostDeathAction = game.judgeSecondVoteRequested && !foolSurvives ? 'second-vote' : 'next-night'
   const next = {
     ...game,
@@ -233,6 +234,7 @@ function finishVote(game: GameState, playerId: string): GameState {
     foolRevealed: game.foolRevealed || Boolean(foolSurvives),
     judgePowerAvailable: game.judgeSecondVoteRequested ? false : game.judgePowerAvailable,
     judgeSecondVoteRequested: false,
+    judgeSecondVoteActive: false,
     scapegoatVoters: [],
   }
   if (foolSurvives) return finishDeaths({ ...next, postDeathAction: 'next-night' })
@@ -263,6 +265,7 @@ export function resolveHunterShot(game: GameState, targetId: string): GameState 
 }
 
 export function beginScapegoatTie(game: GameState): GameState {
+  if (game.villagePowersDisabled) return prepareNextNight(game)
   const scapegoat = aliveWithRole(game, 'scapegoat')[0]
   if (!scapegoat) return prepareNextNight(game)
   return { ...game, phase: 'scapegoat-action', pendingVoteTargetId: scapegoat.id }

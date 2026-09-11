@@ -123,6 +123,9 @@ h1 em { font-weight: 400; color: #d6aa60; }
 .catalog-card strong, .catalog-card small { display: block; }
 .catalog-card strong { font-size: 13px; }
 .catalog-card small { margin-top: 4px; color: #7b837e; font-size: 10px; line-height: 1.3; }
+.role-artwork { position: relative; flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; background: #f1eee6; }
+.role-artwork > span { line-height: 1; }
+.role-artwork > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .counter { display: grid; grid-template-columns: 23px 18px 23px; align-items: center; gap: 3px; text-align: center; }
 .counter button { width: 23px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: #42634f; }
 .counter b { font-size: 13px; }
@@ -175,6 +178,8 @@ h1 em { font-weight: 400; color: #d6aa60; }
 .picker-grid button > span { flex: 0 0 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.1); font-size: 11px; font-weight: 700; }
 .picker-grid button svg { margin-left: auto; color: #e4b762; }
 .picker-grid button.selected { border-color: #d5aa59; background: rgba(213,170,89,.13); box-shadow: inset 0 0 0 1px #d5aa59; }
+.picker-empty { margin: 0; padding: 14px; color: #aeb9b2; border: 1px dashed rgba(255,255,255,.16); border-radius: 7px; text-align: center; }
+.day .picker-empty { color: #69736c; border-color: rgba(20,30,23,.16); }
 .reveal-card { width: min(330px, 100%); margin: 18px auto 0; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 14px; border: 1px solid rgba(213,170,89,.35); background: rgba(213,170,89,.1); border-radius: 9px; }
 .reveal-card > span { font-size: 27px; }
 .reveal-card small, .reveal-card strong { display: block; text-align: left; }
@@ -200,9 +205,10 @@ h1 em { font-weight: 400; color: #d6aa60; }
 .chorus-center strong, .chorus-center small { display: block; }
 .chorus-center strong { margin-top: 2px; font-family: Georgia, serif; font-weight: 400; }
 .chorus-center small { color: #829087; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
-.chorus-seat { position: absolute; z-index: 2; width: 82px; min-height: 54px; transform: translate(-50%,-50%); display: grid; grid-template-columns: 25px 1fr 16px; align-items: center; gap: 4px; padding: 7px; color: #aeb8b1; border: 1px solid rgba(255,255,255,.13); border-radius: 9px; background: #18231d; box-shadow: 0 5px 15px rgba(0,0,0,.22); transition: transform .2s, border-color .2s, background .2s, box-shadow .2s, opacity .2s; }
-.chorus-seat > span { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; color: #d8dfda; background: rgba(255,255,255,.09); font-size: 10px; font-weight: 700; }
-.chorus-seat > strong { min-width: 0; overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.chorus-seat { position: absolute; z-index: 2; width: 104px; min-height: 58px; transform: translate(-50%,-50%); display: grid; grid-template-columns: 27px minmax(0, 1fr) 18px; align-items: center; gap: 5px; padding: 7px; color: #d2dad5; border: 1px solid rgba(255,255,255,.15); border-radius: 10px; background: #18231d; box-shadow: 0 5px 15px rgba(0,0,0,.22); transition: transform .2s, border-color .2s, background .2s, box-shadow .2s, opacity .2s; }
+.chorus-seat > .seat-number { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; color: #f1e9da; background: rgba(255,255,255,.1); font-size: 11px; font-weight: 700; }
+.chorus-seat > strong { min-width: 0; font-size: 11px; line-height: 1.15; white-space: normal; overflow-wrap: anywhere; }
+.chorus-seat:not(:has(> small)) { grid-template-columns: 27px minmax(0, 1fr); }
 .chorus-seat > small { font-size: 13px; }
 .chorus-seat.awake { z-index: 4; color: #fff5df; border-color: #e0af55; background: #3b3120; box-shadow: 0 0 0 3px rgba(224,175,85,.15), 0 0 28px rgba(224,175,85,.3); transform: translate(-50%,-50%) scale(1.1); animation: awakePulse 1.8s ease-in-out infinite; }
 .chorus-seat.targeted { border-color: #759ec0; box-shadow: 0 0 0 3px rgba(93,145,186,.16); }
@@ -331,6 +337,24 @@ h1 em { font-weight: 400; color: #d6aa60; }
 .decision-cards button strong, .decision-cards button small { display: block; }
 .decision-cards button small { color: #6d776f; line-height: 1.45; }
 .day-summary { max-width: 720px; margin: 12px auto 24px; display: grid; gap: 10px; }
+.death-summary { padding: 18px; border: 1px solid rgba(139,45,39,.22); border-radius: 16px; background: rgba(255,255,255,.56); box-shadow: 0 16px 45px rgba(91,50,35,.08); }
+.death-summary-head { display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 11px; margin-bottom: 14px; text-align: left; }
+.death-summary-head > span { width: 38px; height: 38px; display: grid; place-items: center; color: #a04236; border-radius: 50%; background: #f2ddd6; }
+.death-summary-head strong, .death-summary-head small { display: block; }
+.death-summary-head strong { font-family: Georgia, serif; font-size: 20px; }
+.death-summary-head small { margin-top: 2px; color: #746b65; }
+.death-summary-head > b { min-width: 30px; height: 30px; display: grid; place-items: center; color: white; border-radius: 50%; background: #9c4338; }
+.death-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.death-card { min-width: 0; display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 12px; padding: 11px; text-align: left; border: 1px solid rgba(139,45,39,.17); border-radius: 12px; background: #fffaf5; }
+.death-role-art { width: 64px; height: 64px; border: 1px solid #d6c9bb; border-radius: 8px; font-size: 25px; box-shadow: 0 5px 14px rgba(60,39,28,.12); }
+.death-card small, .death-card strong { display: block; }
+.death-card small { color: #a04236; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
+.death-card strong { margin-top: 3px; overflow-wrap: anywhere; font-family: Georgia, serif; font-size: 20px; }
+.death-card p { margin: 4px 0 0; color: #756e68; font-size: 11px; line-height: 1.3; }
+.no-deaths-card { display: grid; grid-template-columns: 44px 1fr; align-items: center; gap: 12px; padding: 18px; text-align: left; border: 1px solid rgba(57,118,79,.22); border-radius: 13px; background: rgba(255,255,255,.46); }
+.no-deaths-card > span { font-size: 28px; }
+.no-deaths-card strong, .no-deaths-card small { display: block; }
+.no-deaths-card small { margin-top: 3px; color: #6f7972; }
 .morning-card { display: grid; grid-template-columns: 44px 1fr; align-items: center; gap: 12px; padding: 16px; text-align: left; border: 1px solid rgba(20,30,23,.13); border-radius: 10px; background: rgba(255,255,255,.35); }
 .morning-card > span { font-size: 27px; }
 .morning-card strong, .morning-card small { display: block; }
@@ -338,6 +362,8 @@ h1 em { font-weight: 400; color: #d6aa60; }
 .morning-card.danger { border-color: rgba(160,67,52,.32); background: rgba(185,76,57,.08); }
 .morning-card.safe { border-color: rgba(57,118,79,.25); }
 .button-outline { color: inherit; border: 1px solid currentColor; background: transparent; }
+.morning-actions { max-width: 420px; margin-inline: auto; }
+.morning-actions .button { width: 100%; }
 
 @media (max-width: 760px) {
   .game-content { width: min(100% - 24px, 620px); padding: 22px 0 32px; }
@@ -351,8 +377,14 @@ h1 em { font-weight: 400; color: #d6aa60; }
   .night-interaction { padding: 13px; }
   .night-map-panel { display: none; position: static; margin-top: 12px; }
   .night-map-panel.show { display: block; }
-  .night-map-panel .chorus-map { height: 270px; }
-  .intro-map .chorus-map { height: 270px; margin-block: 14px; }
+  .night-map-panel .chorus-map, .intro-map .chorus-map { width: 100%; height: auto; min-height: 0; margin-block: 14px; padding: 54px 9px 9px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; border-radius: 14px; }
+  .chorus-map::before { display: none; }
+  .chorus-center { left: 9px; right: 9px; top: 9px; width: auto; height: 36px; transform: none; display: flex; flex-direction: row; gap: 7px; border-radius: 9px; }
+  .chorus-center strong { margin: 0; }
+  .chorus-seat { position: relative; left: auto !important; top: auto !important; width: auto; min-height: 48px; transform: none !important; grid-template-columns: 27px minmax(0, 1fr) 20px; padding: 7px 8px; box-shadow: none; }
+  .chorus-seat.awake { transform: none; }
+  .chorus-seat > strong { overflow: visible; font-size: 12px; line-height: 1.2; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
+  .chorus-seat > small { display: block; font-size: 14px; }
   .discovery-box { margin: 8px 0 12px; padding: 12px; }
   .who-wakes { margin-top: 8px; }
   .picker { margin: 17px 0; }
@@ -365,4 +397,8 @@ h1 em { font-weight: 400; color: #d6aa60; }
   .clockwise-label { display: none; }
   .seating-order > div:first-child { align-items: flex-start; }
   .witch-actions { margin-top: 16px; }
+  .death-summary { padding: 13px; }
+  .death-grid { grid-template-columns: 1fr; }
+  .death-card { grid-template-columns: 54px minmax(0, 1fr); }
+  .death-role-art { width: 54px; height: 54px; }
 }

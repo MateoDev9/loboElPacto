@@ -72,6 +72,7 @@ export interface GameState {
   foxPowerAvailable: boolean
   judgePowerAvailable: boolean
   judgeSecondVoteRequested: boolean
+  judgeSecondVoteActive: boolean
   elderWolfHits: number
   villagePowersDisabled: boolean
   foolRevealed: boolean
