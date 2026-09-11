@@ -9,7 +9,7 @@ import {
   resolveHunterShot, resolveScapegoat, resolveServantChoice,
 } from './game'
 import { CATEGORY_LABELS, isWolfRole, recommendedRoles, ROLE_LIST, ROLES } from './roles'
-import { clearGame, loadGame, loadLastGroup, loadPeople, saveGame, saveLastGroup, savePeople } from './storage'
+import { clearGame, loadGame, loadLastGroups, loadPeople, saveGame, saveLastGroups, savePeople } from './storage'
 import type { GameState, Player, RoleCategory, RoleId, SetupStep, Winner } from './types'
 
 type Screen = 'home' | 'library' | 'setup' | 'game'
@@ -34,7 +34,12 @@ function App() {
 
   const resetSetup = () => { setNames([]); setDeck([]); setSetupStep('players'); setScreen('setup') }
   const goToRoles = () => { setDeck(recommendedRoles(names.length)); setSetupStep('roles') }
-  const startGame = () => { setGame(createGame(names, deck)); saveLastGroup(names); setScreen('game') }
+  const startGame = () => {
+    setGame(createGame(names, deck))
+    const previous = loadLastGroups().filter((group) => group.join(',') !== names.join(','))
+    saveLastGroups([names, ...previous].slice(0, 10))
+    setScreen('game')
+  }
   const endGame = () => { clearGame(); setGame(null); setScreen('home') }
 
   if (screen === 'library') return <PeopleLibrary people={people} addPerson={addPerson} removePerson={(name) => setPeople(people.filter((person) => person !== name))} onBack={() => setScreen('home')} />
@@ -81,6 +86,7 @@ function PeopleLibrary({ people, addPerson, removePerson, onBack }: { people: st
 
 function PlayersSetup({ people, names, setNames, addPerson, onBack, onNext }: { people: string[]; names: string[]; setNames: (names: string[]) => void; addPerson: (name: string) => boolean; onBack: () => void; onNext: () => void }) {
   const [selectedSeatIndex, setSelectedSeatIndex] = useState<number | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
   const toggle = (name: string) => setNames(names.includes(name) ? names.filter((person) => person !== name) : [...names, name])
   const handleSeatClick = (index: number) => {
     if (selectedSeatIndex === null) {
@@ -94,11 +100,22 @@ function PlayersSetup({ people, names, setNames, addPerson, onBack, onNext }: { 
       setSelectedSeatIndex(null)
     }
   }
-  const lastGroup = useMemo(() => loadLastGroup(), [])
-  const canReuse = lastGroup.length >= 5 && names.length === 0 && lastGroup.every(name => people.includes(name))
+  const lastGroups = useMemo(() => loadLastGroups().filter((group) => group.every((name) => people.includes(name))), [])
   return <main className="app-shell"><PageHeader step="Paso 1 de 2" onBack={onBack} /><section className="setup-wrap">
     <div className="section-heading"><p className="eyebrow">Reúne a la aldea</p><h2>¿Quién juega hoy?</h2><p>Selecciona al menos 5 personas. Después ordénalas en el coro intercambiando sus asientos (toca una y luego otra).</p></div>
-    {canReuse && <button className="button button-secondary button-large reuse-button" onClick={() => setNames([...lastGroup])}>✨ Juegan los de la partida anterior</button>}
+    {lastGroups.length > 0 && names.length === 0 && <div className="history-groups">
+      {!showHistory ? <button className="button button-secondary button-large reuse-button" style={{ width: '100%' }} onClick={() => setShowHistory(true)}>✨ Historial de grupos ({lastGroups.length})</button> : <>
+        <p className="eyebrow">✨ Grupos anteriores</p>
+        <div className="history-scroll">
+          {lastGroups.map((group, i) => (
+            <button key={i} className="history-card" onClick={() => { setNames([...group]); setShowHistory(false) }}>
+              <strong>{group.length} personas</strong>
+              <small>{group.join(', ')}</small>
+            </button>
+          ))}
+        </div>
+      </>}
+    </div>}
     <div className="panel player-panel"><div className="panel-title"><span>Biblioteca</span><span className="count-pill">{names.length} seleccionadas</span></div>
       <div className="people-grid">{people.map((name) => <button key={name} className={names.includes(name) ? 'selected' : ''} onClick={() => toggle(name)}><span className="avatar">{name[0].toUpperCase()}</span><strong>{name}</strong>{names.includes(name) && <Check size={17} />}</button>)}</div>
       {!people.length && <p className="empty-state">Añade a tu grupo habitual para empezar.</p>}

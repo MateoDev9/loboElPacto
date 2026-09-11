@@ -112,6 +112,12 @@ h1 em { font-weight: 800; color: var(--accent-gold); font-style: normal; }
 .inline-add { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
 .inline-add small { display: block; color: var(--text-muted); margin-bottom: 10px; }
 .seating-order { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.history-groups { margin-bottom: 24px; }
+.history-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; margin: 12px -24px 0; padding: 0 24px 12px; }
+.history-card { flex: 0 0 220px; scroll-snap-align: center; padding: 14px 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text-main); text-align: left; transition: all 0.2s; }
+.history-card:hover { background: var(--surface-hover); border-color: var(--accent-gold); }
+.history-card strong { display: block; font-size: 14px; font-weight: 600; color: var(--accent-gold); margin-bottom: 6px; }
+.history-card small { display: block; font-size: 12px; color: var(--text-muted); line-height: 1.4; white-space: normal; }
 .seating-order > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .seating-order > div:first-child small { color: var(--text-muted); font-weight: 500; }
 .seating-order ol { display: grid; gap: 8px; margin: 16px 0 0; padding: 0; list-style: none; }
@@ -407,15 +413,20 @@ h1 em { font-weight: 800; color: var(--accent-gold); font-style: normal; }
   .night-map-panel { display: none; position: static; margin-top: 16px; }
   .night-map-panel.show { display: block; }
   .night-map-panel .chorus-map, .intro-map .chorus-map { width: 100%; height: auto; min-height: 0; margin-block: 16px; padding: 56px 12px 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; border-radius: 16px; border: 0; background: transparent; box-shadow: none; }
-  .chorus-map::before { display: none; }
+  .night-map-panel .chorus-map::before, .intro-map .chorus-map::before { display: none; }
   
-  .chorus-center { left: 12px; right: 12px; top: 0; width: auto; height: 44px; transform: none; display: flex; flex-direction: row; gap: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); backdrop-filter: blur(10px); }
-  .chorus-center strong { margin: 0; }
-  .chorus-seat { position: relative; left: auto !important; top: auto !important; width: auto; min-height: 52px; transform: none !important; grid-template-columns: 24px minmax(0, 1fr) 20px; padding: 8px 10px; box-shadow: none; border-radius: 10px; }
-  .chorus-seat.awake { transform: none; }
-  .chorus-seat > strong { overflow: visible; font-size: 12px; line-height: 1.25; text-overflow: clip; white-space: normal; font-weight: 600; }
-  .seat-role-art { display: grid; width: 22px; height: 22px; }
-  .chorus-seat > .seat-number { width: 24px; height: 24px; font-size: 11px; }
+  .night-map-panel .chorus-center, .intro-map .chorus-center { left: 12px; right: 12px; top: 0; width: auto; height: 44px; transform: none; display: flex; flex-direction: row; gap: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); backdrop-filter: blur(10px); }
+  .night-map-panel .chorus-center strong, .intro-map .chorus-center strong { margin: 0; }
+  .night-map-panel .chorus-seat, .intro-map .chorus-seat { position: relative; left: auto !important; top: auto !important; width: auto; min-height: 52px; transform: none !important; grid-template-columns: 24px minmax(0, 1fr) 20px; padding: 8px 10px; box-shadow: none; border-radius: 10px; }
+  .night-map-panel .chorus-seat.awake, .intro-map .chorus-seat.awake { transform: none; }
+  .night-map-panel .chorus-seat > strong, .intro-map .chorus-seat > strong { overflow: visible; font-size: 12px; line-height: 1.25; text-overflow: clip; white-space: normal; font-weight: 600; }
+  .night-map-panel .seat-role-art, .intro-map .seat-role-art { display: grid; width: 22px; height: 22px; }
+  .night-map-panel .chorus-seat > .seat-number, .intro-map .chorus-seat > .seat-number { width: 24px; height: 24px; font-size: 11px; }
+
+  .chorus-setup-map { overflow: hidden; display: flex; justify-content: center; margin: 16px -18px 0; }
+  .chorus-setup-map .chorus-map { width: 620px; height: 380px; flex: 0 0 620px; transform: scale(0.55); margin: -60px 0 -80px; }
+  
+  .history-scroll { margin: 12px -18px 0; padding: 0 18px 12px; }
   
   .discovery-box { margin: 12px 0 16px; padding: 16px; border-radius: 12px; }
   .who-wakes { margin-top: 12px; }

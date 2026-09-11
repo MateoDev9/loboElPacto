@@ -33,17 +33,26 @@ export function savePeople(people: string[]) {
   localStorage.setItem(PEOPLE_KEY, JSON.stringify(people))
 }
 
-const LAST_GROUP_KEY = 'lobo-narrador-last-group-v1'
+const LAST_GROUP_KEY = 'lobo-narrador-last-group-v2'
 
-export function loadLastGroup(): string[] {
+export function loadLastGroups(): string[][] {
   try {
     const value = localStorage.getItem(LAST_GROUP_KEY)
-    return value ? JSON.parse(value) as string[] : []
+    if (!value) return []
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed) && Array.isArray(parsed[0])) {
+      return parsed as string[][]
+    }
+    // Migrate v1 to v2 if it's just one group
+    if (Array.isArray(parsed) && typeof parsed[0] === 'string') {
+      return [parsed as string[]]
+    }
+    return []
   } catch {
     return []
   }
 }
 
-export function saveLastGroup(names: string[]) {
-  localStorage.setItem(LAST_GROUP_KEY, JSON.stringify(names))
+export function saveLastGroups(groups: string[][]) {
+  localStorage.setItem(LAST_GROUP_KEY, JSON.stringify(groups))
 }
