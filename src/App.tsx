@@ -207,16 +207,16 @@ function GameScreen({ game, setGame, onExit, onEnd }: { game: GameState; setGame
 
   const phase = useMemo(() => {
     if (game.phase === 'night-intro') return game.openingDay
-      ? { icon: <span className="emoji-large">🪽</span>, kicker: 'Preparación especial', title: 'Identifica al Ángel', text: 'Antes del debate inicial, pide únicamente al Ángel que abra los ojos para que puedas registrar quién es.' }
+      ? { icon: <RoleArtwork roleId="angel" className="phase-role-art" />, kicker: 'Preparación especial', title: 'Identifica al Ángel', text: 'Antes del debate inicial, pide únicamente al Ángel que abra los ojos para que puedas registrar quién es.' }
       : { icon: <Moon size={30} />, kicker: `Noche ${game.round}`, title: 'La aldea se duerme', text: game.round === 1 ? 'Primero ubicarás todos los personajes y resolverás sus decisiones iniciales.' : 'La app llamará, en orden, solo a los personajes vivos que tengan una acción.' }
     if (game.phase === 'night-result') return { icon: <Sun size={30} />, kicker: `Día ${game.round}`, title: 'La aldea despierta', text: game.lastDeaths.length ? `${game.lastDeaths.length === 1 ? 'Una persona no ha sobrevivido' : `${game.lastDeaths.length} personas no han sobrevivido`} a la noche. Revisa las víctimas antes de abrir la votación.` : game.elderWolfHits ? 'No hay víctimas. El Anciano puede haber resistido el ataque.' : 'Ha amanecido sin víctimas.' }
     if (game.phase === 'day-discussion') return { icon: <Users size={30} />, kicker: game.openingDay ? 'Día previo · Ángel' : `Día ${game.round}`, title: game.openingDay ? 'La partida empieza de día' : 'Comienza el debate', text: game.openingDay ? 'Con el Ángel se debate y vota antes de la primera noche.' : 'Anuncia las víctimas, aplica los recordatorios visibles y deja que la aldea debata.' }
     if (game.phase === 'day-vote') return { icon: <Vote size={30} />, kicker: `Día ${game.round} · Votación`, title: game.judgeSecondVoteActive ? 'Segunda votación inmediata' : 'La aldea dicta sentencia', text: 'Selecciona el resultado real de la votación. La app aplicará las excepciones del personaje.' }
-    if (game.phase === 'hunter-action') return { icon: <span className="emoji-large">🎯</span>, kicker: 'Acción antes de morir', title: `Dispara ${selectedName(game.pendingHunters[0]) ?? 'el Cazador'}`, text: 'El Cazador debe eliminar a una persona antes de abandonar la partida. Después se resolverán las consecuencias en cadena.' }
-    if (game.phase === 'servant-action') return { icon: <span className="emoji-large">🫶</span>, kicker: 'Antes de revelar la carta', title: 'Decide la Abnegada Sirvienta', text: `${selectedName(game.pendingVoteTargetId)} ha sido elegido. La Sirvienta puede adoptar su personaje antes de que se revele.` }
-    if (game.phase === 'scapegoat-action') return { icon: <span className="emoji-large">👉</span>, kicker: 'La votación ha empatado', title: 'Muere el Cabeza de Turco', text: 'Antes de morir designa qué personas conservarán el derecho a votar en la próxima votación.' }
+    if (game.phase === 'hunter-action') return { icon: <RoleArtwork roleId="hunter" className="phase-role-art" />, kicker: 'Acción antes de morir', title: `Dispara ${selectedName(game.pendingHunters[0]) ?? 'el Cazador'}`, text: 'El Cazador debe eliminar a una persona antes de abandonar la partida. Después se resolverán las consecuencias en cadena.' }
+    if (game.phase === 'servant-action') return { icon: <RoleArtwork roleId="devoted_servant" className="phase-role-art" />, kicker: 'Antes de revelar la carta', title: 'Decide la Abnegada Sirvienta', text: `${selectedName(game.pendingVoteTargetId)} ha sido elegido. La Sirvienta puede adoptar su personaje antes de que se revele.` }
+    if (game.phase === 'scapegoat-action') return { icon: <RoleArtwork roleId="scapegoat" className="phase-role-art" />, kicker: 'La votación ha empatado', title: 'Muere el Cabeza de Turco', text: 'Antes de morir designa qué personas conservarán el derecho a votar en la próxima votación.' }
     if (game.phase === 'game-over') return winnerCopy(game.winner)
-    return { icon: <span className="emoji-large">{currentRole?.icon}</span>, kicker: `Noche ${game.round} · ${game.sequenceIndex + 1} de ${game.nightSequence.length}`, title: `Se despierta: ${currentRole?.name}`, text: currentRole?.narratorPrompt ?? '' }
+    return { icon: <RoleArtwork roleId={currentRoleId} className="phase-role-art" />, kicker: `Noche ${game.round} · ${game.sequenceIndex + 1} de ${game.nightSequence.length}`, title: `Se despierta: ${currentRole?.name}`, text: currentRole?.narratorPrompt ?? '' }
   }, [game, currentRoleId])
 
   const chorusTargets = [
@@ -340,7 +340,7 @@ function SeatingCircle({ players, awakeIds, targetIds, wolfVictimId, protectedId
     const style = { left: `${50 + Math.cos(angle) * 40}%`, top: `${50 + Math.sin(angle) * 40}%` }
     const classes = ['chorus-seat', awakeIds.includes(player.id) ? 'awake' : '', targetIds.includes(player.id) ? 'targeted' : '', wolfVictimId === player.id ? 'victim' : '', protectedId === player.id ? 'protected' : '', !player.alive ? 'dead' : ''].filter(Boolean).join(' ')
     const states = [awakeIds.includes(player.id) ? 'despierto' : '', targetIds.includes(player.id) ? 'objetivo' : '', wolfVictimId === player.id ? 'víctima' : '', protectedId === player.id ? 'protegido' : '', !player.alive ? 'eliminado' : ''].filter(Boolean)
-    return <div className={classes} style={style} key={player.id} title={player.name} aria-label={`Asiento ${index + 1}: ${player.name}${states.length ? `, ${states.join(', ')}` : ''}`}><span className="seat-number">{index + 1}</span><strong>{player.name}</strong>{player.roleId && <small aria-hidden="true">{ROLES[player.roleId].icon}</small>}</div>
+    return <div className={classes} style={style} key={player.id} title={player.name} aria-label={`Asiento ${index + 1}: ${player.name}${states.length ? `, ${states.join(', ')}` : ''}`}><span className="seat-number">{index + 1}</span><strong>{player.name}</strong>{player.roleId && <RoleArtwork roleId={player.roleId} className="seat-role-art" />}</div>
   })}</div>
 }
 
@@ -394,8 +394,10 @@ function RoleDrawer({ game, onClose }: { game: GameState; onClose: () => void })
 
 function RoleArtwork({ roleId, className = '' }: { roleId?: RoleId; className?: string }) {
   const role = roleId ? ROLES[roleId] : undefined
-  const cardUrl = role ? `${import.meta.env.BASE_URL}cards/${role.id}.webp` : undefined
-  return <span className={`role-artwork ${className}`.trim()}>{role ? <><span aria-hidden="true">{role.icon}</span><img src={cardUrl} alt={`Carta de ${role.name}`} onError={(event) => { event.currentTarget.hidden = true }} /></> : <span aria-hidden="true">❔</span>}</span>
+  const cardId = role?.id === 'pure_villager' ? 'villager' : role?.id
+  const cardUrl = cardId ? `${import.meta.env.BASE_URL}cards/${cardId}.webp` : undefined
+  const variantClass = role?.id === 'pure_villager' ? 'pure-variant' : ''
+  return <span className={`role-artwork ${variantClass} ${className}`.trim()}>{role ? <><span aria-hidden="true">{role.icon}</span><img src={cardUrl} alt={`Carta de ${role.name}`} onError={(event) => { event.currentTarget.hidden = true }} /></> : <span aria-hidden="true">❔</span>}</span>
 }
 
 function winnerCopy(winner?: Winner) {

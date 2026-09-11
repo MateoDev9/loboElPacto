@@ -15,8 +15,9 @@ Ejemplos:
 - `cupid.webp`
 - `villager.webp`
 
-La lista completa de identificadores se encuentra en `src/roles.ts`. Actualmente
-solo falta `pure_villager.webp`, correspondiente a Aldeano-Aldeano.
+La lista completa de identificadores se encuentra en `src/roles.ts`. El rol
+`pure_villager` reutiliza `villager.webp` con un filtro más claro aplicado por la
+interfaz para diferenciar al Aldeano-Aldeano.
 
 Antes de distribuir imágenes comerciales, confirma que su licencia o el permiso
 del titular permite utilizarlas en esta web. Que el proyecto sea fan o gratuito no

@@ -126,6 +126,7 @@ h1 em { font-weight: 400; color: #d6aa60; }
 .role-artwork { position: relative; flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; background: #f1eee6; }
 .role-artwork > span { line-height: 1; }
 .role-artwork > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.role-artwork.pure-variant > img { filter: brightness(1.34) saturate(.58) contrast(.82); }
 .counter { display: grid; grid-template-columns: 23px 18px 23px; align-items: center; gap: 3px; text-align: center; }
 .counter button { width: 23px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: #42634f; }
 .counter b { font-size: 13px; }
@@ -165,6 +166,7 @@ h1 em { font-weight: 400; color: #d6aa60; }
 .game-content { width: min(720px, calc(100% - 32px)); margin: auto; text-align: center; padding: 48px 0 42px; }
 .phase-icon { width: 74px; height: 74px; margin: 0 auto 22px; border-radius: 50%; display: grid; place-items: center; color: #e0b15f; border: 1px solid rgba(224,177,95,.3); background: rgba(255,255,255,.035); }
 .day .phase-icon { background: rgba(255,255,255,.35); }
+.phase-role-art { width: 100%; height: 100%; border-radius: inherit; }
 .emoji-large { font-size: 34px; }
 .game-content .eyebrow { color: #d4a854; }
 .game-content h2 { font-size: clamp(42px, 6vw, 58px); }
@@ -208,8 +210,8 @@ h1 em { font-weight: 400; color: #d6aa60; }
 .chorus-seat { position: absolute; z-index: 2; width: 104px; min-height: 58px; transform: translate(-50%,-50%); display: grid; grid-template-columns: 27px minmax(0, 1fr) 18px; align-items: center; gap: 5px; padding: 7px; color: #d2dad5; border: 1px solid rgba(255,255,255,.15); border-radius: 10px; background: #18231d; box-shadow: 0 5px 15px rgba(0,0,0,.22); transition: transform .2s, border-color .2s, background .2s, box-shadow .2s, opacity .2s; }
 .chorus-seat > .seat-number { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; color: #f1e9da; background: rgba(255,255,255,.1); font-size: 11px; font-weight: 700; }
 .chorus-seat > strong { min-width: 0; font-size: 11px; line-height: 1.15; white-space: normal; overflow-wrap: anywhere; }
-.chorus-seat:not(:has(> small)) { grid-template-columns: 27px minmax(0, 1fr); }
-.chorus-seat > small { font-size: 13px; }
+.chorus-seat:not(:has(> .seat-role-art)) { grid-template-columns: 27px minmax(0, 1fr); }
+.seat-role-art { width: 20px; height: 20px; border: 1px solid rgba(255,255,255,.18); border-radius: 5px; font-size: 11px; }
 .chorus-seat.awake { z-index: 4; color: #fff5df; border-color: #e0af55; background: #3b3120; box-shadow: 0 0 0 3px rgba(224,175,85,.15), 0 0 28px rgba(224,175,85,.3); transform: translate(-50%,-50%) scale(1.1); animation: awakePulse 1.8s ease-in-out infinite; }
 .chorus-seat.targeted { border-color: #759ec0; box-shadow: 0 0 0 3px rgba(93,145,186,.16); }
 .chorus-seat.victim { border-color: #c95b4c; background: #3a211e; box-shadow: 0 0 0 3px rgba(201,91,76,.16); }
@@ -276,8 +278,8 @@ h1 em { font-weight: 400; color: #d6aa60; }
   .game-content { padding-top: 30px; }
   .chorus-map { height: 300px; margin-block: 28px 22px; }
   .chorus-seat { width: 67px; min-height: 46px; grid-template-columns: 21px 1fr; padding: 5px; }
-  .chorus-seat > span { width: 21px; height: 21px; }
-  .chorus-seat > small { display: none; }
+  .chorus-seat > .seat-number { width: 21px; height: 21px; }
+  .seat-role-art { display: none; }
   .chorus-center { width: 85px; height: 60px; }
   .picker-grid { grid-template-columns: repeat(2, 1fr); }
   .witch-actions { grid-template-columns: 1fr; }
@@ -384,7 +386,7 @@ h1 em { font-weight: 400; color: #d6aa60; }
   .chorus-seat { position: relative; left: auto !important; top: auto !important; width: auto; min-height: 48px; transform: none !important; grid-template-columns: 27px minmax(0, 1fr) 20px; padding: 7px 8px; box-shadow: none; }
   .chorus-seat.awake { transform: none; }
   .chorus-seat > strong { overflow: visible; font-size: 12px; line-height: 1.2; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
-  .chorus-seat > small { display: block; font-size: 14px; }
+  .seat-role-art { display: grid; width: 20px; height: 20px; }
   .discovery-box { margin: 8px 0 12px; padding: 12px; }
   .who-wakes { margin-top: 8px; }
   .picker { margin: 17px 0; }
