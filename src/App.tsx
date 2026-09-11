@@ -394,7 +394,8 @@ function RoleDrawer({ game, onClose }: { game: GameState; onClose: () => void })
 
 function RoleArtwork({ roleId, className = '' }: { roleId?: RoleId; className?: string }) {
   const role = roleId ? ROLES[roleId] : undefined
-  return <span className={`role-artwork ${className}`.trim()}>{role ? <><span aria-hidden="true">{role.icon}</span><img src={`/cards/${role.id}.webp`} alt={`Carta de ${role.name}`} onError={(event) => { event.currentTarget.hidden = true }} /></> : <span aria-hidden="true">❔</span>}</span>
+  const cardUrl = role ? `${import.meta.env.BASE_URL}cards/${role.id}.webp` : undefined
+  return <span className={`role-artwork ${className}`.trim()}>{role ? <><span aria-hidden="true">{role.icon}</span><img src={cardUrl} alt={`Carta de ${role.name}`} onError={(event) => { event.currentTarget.hidden = true }} /></> : <span aria-hidden="true">❔</span>}</span>
 }
 
 function winnerCopy(winner?: Winner) {
