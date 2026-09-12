@@ -2,6 +2,11 @@ import type { GameState } from './types'
 
 const STORAGE_KEY = 'lobo-narrador-active-game-v5'
 const PEOPLE_KEY = 'lobo-narrador-people-library-v4'
+const DEFAULT_PEOPLE = [
+  'Aleandro', 'Anitamari', 'Antoñito', 'Cristina', 'Dami', 'Daniela', 'Edu', 'Estefania',
+  'Leo', 'Lucia', 'Mari', 'Marina', 'Marta', 'Paloma', 'Paqui', 'Romi', 'Rosalil', 'Sandra',
+  'Sergio', 'Titantonio',
+]
 
 export function saveGame(game: GameState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(game))
@@ -23,9 +28,11 @@ export function clearGame() {
 export function loadPeople(): string[] {
   try {
     const value = localStorage.getItem(PEOPLE_KEY)
-    return value ? JSON.parse(value) as string[] : []
+    const saved = value ? JSON.parse(value) as string[] : []
+    const names = [...new Set([...DEFAULT_PEOPLE, ...(Array.isArray(saved) ? saved : [])])]
+    return names.sort((a, b) => a.localeCompare(b, 'es'))
   } catch {
-    return []
+    return [...DEFAULT_PEOPLE].sort((a, b) => a.localeCompare(b, 'es'))
   }
 }
 
