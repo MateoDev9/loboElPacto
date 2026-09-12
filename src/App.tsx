@@ -364,6 +364,8 @@ function DaySummary({ game }: { game: GameState }) {
 
 function SeatingCircle({ players, awakeIds, selectedIds = [], targetIds, wolfVictimId, protectedId, round, onSeatClick, variant = 'night' }: { players: Player[]; awakeIds: string[]; selectedIds?: string[]; targetIds: string[]; wolfVictimId?: string; protectedId?: string; round: number; onSeatClick?: (id: string) => void; variant?: 'night' | 'setup' }) {
   const mapHeight = variant === 'setup' ? Math.max(420, Math.ceil(players.length / 2) * 76 + 108) : Math.max(380, players.length * 48)
+  const setupRows = Math.ceil(players.length / 2)
+  const setupRightCount = Math.max(0, Math.floor(players.length / 2) - 1)
   const W_px = 620 * 0.8
   const H_px = mapHeight * 0.75
   const P = 2 * (W_px + H_px)
@@ -387,7 +389,13 @@ function SeatingCircle({ players, awakeIds, selectedIds = [], targetIds, wolfVic
     const yFrac = y / H_px
     // Padding: 10px horizontal, 20px vertical
     const style = variant === 'setup'
-      ? { gridColumn: `${(index % 2) + 1}`, gridRow: `${Math.floor(index / 2) + 1}` }
+      ? (() => {
+          if (index === 0) return { gridColumn: '1', gridRow: '1' }
+          if (index === 1) return { gridColumn: '2', gridRow: '1' }
+          if (index < 2 + setupRightCount) return { gridColumn: '2', gridRow: `${index}` }
+          const leftPathIndex = index - (2 + setupRightCount)
+          return { gridColumn: '1', gridRow: `${setupRows - leftPathIndex}` }
+        })()
       : { left: `calc(65px + (100% - 130px) * ${xFrac})`, top: `calc(55px + (100% - 110px) * ${yFrac})` }
 
     const classes = ['chorus-seat', awakeIds.includes(player.id) ? 'awake' : '', selectedIds.includes(player.id) ? 'seat-selected' : '', targetIds.includes(player.id) ? 'targeted' : '', wolfVictimId === player.id ? 'victim' : '', protectedId === player.id ? 'protected' : '', !player.alive ? 'dead' : '', onSeatClick ? 'clickable' : ''].filter(Boolean).join(' ')
