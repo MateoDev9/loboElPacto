@@ -6,7 +6,7 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
   werewolf: role({ id: 'werewolf', name: 'Hombre Lobo Común', shortName: 'Lobos', icon: '🐺', color: '#bd5545', team: 'wolves', category: 'wolves', maxCards: 4, nightOrder: 60, callKind: 'wolves', description: 'La manada elige una víctima cada noche.', narratorPrompt: 'Despierta a toda la manada y pide que elijan una víctima que no sea Hombre Lobo.' }),
   fierce_wolf: role({ id: 'fierce_wolf', name: 'Lobo Feroz', shortName: 'Lobo Feroz', icon: '🩸', color: '#9e3d34', team: 'wolves', category: 'wolves', maxCards: 1, nightOrder: 70, callKind: 'one-target', description: 'Realiza un segundo ataque mientras no haya muerto ningún lobo.', narratorPrompt: 'Si ningún lobo ha muerto, despiértalo solo para que elija una segunda víctima que no sea lobo.' }),
   infect_father: role({ id: 'infect_father', name: 'Infecto Padre de todos los Lobos', shortName: 'Infecto Padre', icon: '🦠', color: '#8f5149', team: 'wolves', category: 'wolves', maxCards: 1, nightOrder: 65, callKind: 'confirm', description: 'Una vez por partida puede convertir a la víctima en lobo.', narratorPrompt: 'Tras dormir la manada, observa si levanta la mano. Si lo hace, la víctima no muere: queda infectada y conserva su poder.' }),
-  albino_wolf: role({ id: 'albino_wolf', name: 'Hombre Lobo Albino', shortName: 'Lobo Albino', icon: '🐺', color: '#b7aca7', team: 'neutral', category: 'solitary', maxCards: 1, nightOrder: 75, everyOtherNight: true, callKind: 'one-target', description: 'Desde la segunda noche, una de cada dos, elimina a un lobo.', narratorPrompt: 'Despiértalo a solas para que elimine a un Hombre Lobo. Su objetivo es ser el único superviviente.' }),
+  albino_wolf: role({ id: 'albino_wolf', name: 'Hombre Lobo Albino', shortName: 'Lobo Albino', icon: '🐺', color: '#b7aca7', team: 'neutral', category: 'solitary', maxCards: 1, nightOrder: 62, everyOtherNight: true, callKind: 'one-target', description: 'Desde la segunda noche, una de cada dos, elimina a un lobo.', narratorPrompt: 'Despiértalo a solas para que elimine a un Hombre Lobo. Su objetivo es ser el único superviviente.' }),
 
   villager: role({ id: 'villager', name: 'Aldeano Común', shortName: 'Aldeano', icon: '🌾', color: '#cda65d', team: 'village', category: 'village', maxCards: 9, passive: true, description: 'No tiene poder especial.', narratorPrompt: 'No realiza ninguna acción nocturna.' }),
   pure_villager: role({ id: 'pure_villager', name: 'Aldeano-Aldeano', shortName: 'Aldeano-Aldeano', icon: '☀️', color: '#d1b66f', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true, description: 'Su inocencia es pública desde el reparto.', narratorPrompt: 'Ubícalo para el narrador y recuerda anunciar públicamente su inocencia.' }),
@@ -26,9 +26,9 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
   stuttering_judge: role({ id: 'stuttering_judge', name: 'Juez Tartamudo', shortName: 'Juez', icon: '⚖️', color: '#647687', team: 'village', category: 'village', maxCards: 1, firstNightOrder: 30, callKind: 'confirm', description: 'Una vez por partida puede ordenar una segunda votación inmediata.', narratorPrompt: 'Acordad en silencio una señal. Durante una votación podrás activar una segunda votación sin debate.' }),
   rusty_knight: role({ id: 'rusty_knight', name: 'Caballero de la Espada Oxidada', shortName: 'Caballero', icon: '🗡️', color: '#7d7061', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true, description: 'Si es devorado, enferma al lobo vivo más cercano a su izquierda.', narratorPrompt: 'Anota quién tiene el Caballero. Si los lobos lo matan, marca al lobo vivo más cercano a su izquierda.' }),
 
-  thief: role({ id: 'thief', name: 'Ladrón', shortName: 'Ladrón', icon: '🃏', color: '#558592', team: 'variable', category: 'ambiguous', maxCards: 1, firstNightOrder: 5, callKind: 'thief', description: 'Puede adoptar una de las dos cartas sobrantes.', narratorPrompt: 'Muéstrale las dos cartas sobrantes y registra el personaje que conserva o adopta.' }),
+  thief: role({ id: 'thief', name: 'Ladrón', shortName: 'Ladrón', icon: '🃏', color: '#558592', team: 'variable', category: 'ambiguous', maxCards: 1, firstNightOrder: 5, callKind: 'thief', description: 'Se añaden 2 Aldeanos al mazo; puede cambiar su carta por una de las 2 sobrantes.', narratorPrompt: 'Muéstrale las dos cartas sobrantes del centro. Puede quedarse el Ladrón o cambiarlo por una de ellas; si las dos son lobos, está obligado a cambiar.' }),
   devoted_servant: role({ id: 'devoted_servant', name: 'Abnegada Sirvienta', shortName: 'Sirvienta', icon: '🫶', color: '#aa728d', team: 'variable', category: 'ambiguous', maxCards: 1, callKind: 'confirm', passive: true, description: 'Antes de revelar a un linchado puede adoptar su carta.', narratorPrompt: 'Anota quién tiene la Sirvienta. Antes de revelar a una persona expulsada, pregúntale si quiere quedarse con su carta.' }),
-  actor: role({ id: 'actor', name: 'Comediante', shortName: 'Comediante', icon: '🎭', color: '#a0655c', team: 'variable', category: 'ambiguous', maxCards: 1, nightOrder: 10, callKind: 'actor', description: 'Cada noche usa uno de tres poderes preparados; la carta se retira.', narratorPrompt: 'Registra cuál de las cartas preparadas elige esta noche y realiza su poder antes de retirarla.' }),
+  actor: role({ id: 'actor', name: 'Comediante', shortName: 'Comediante', icon: '🎭', color: '#a0655c', team: 'variable', category: 'ambiguous', maxCards: 1, nightOrder: 10, callKind: 'actor', description: 'Cada noche usa una de las 3 cartas preparadas antes de la partida; la carta se retira.', narratorPrompt: 'Pide que señale una de las cartas preparadas del centro. La llamaré en su turno como si fuera ese personaje y después la retiras.' }),
   wild_child: role({ id: 'wild_child', name: 'Niño Salvaje', shortName: 'Niño Salvaje', icon: '🌲', color: '#527957', team: 'variable', category: 'ambiguous', maxCards: 1, firstNightOrder: 20, callKind: 'one-target', description: 'Elige un mentor; cuando muere, se convierte en lobo.', narratorPrompt: 'Pide que señale a su modelo. Si el modelo muere, se incorporará a la manada desde la noche siguiente.' }),
   wolf_hound: role({ id: 'wolf_hound', name: 'Perro Lobo', shortName: 'Perro Lobo', icon: '🐕', color: '#86765c', team: 'variable', category: 'ambiguous', maxCards: 1, callKind: 'confirm', passive: true, description: 'Elige en secreto ser aldeano o lobo para toda la partida.', narratorPrompt: 'Ubícalo, pero no le preguntes su elección. Durante la llamada de la manada anotarás si abre los ojos con los lobos.' }),
 
@@ -46,13 +46,17 @@ export const isWolfRole = (id?: RoleId): id is RoleId => Boolean(id && ['werewol
 export const isVillagePower = (id?: RoleId) => Boolean(id && ROLES[id].team === 'village' && !['villager', 'pure_villager'].includes(id))
 
 const FIRST_NIGHT_DISCOVERY_ORDER: Partial<Record<RoleId, number>> = {
-  sectarian: 1, thief: 5, actor: 7, cupid: 10, wolf_hound: 15, wild_child: 20,
+  thief: 5, sectarian: 6, actor: 7, cupid: 10, wolf_hound: 15, wild_child: 20,
   two_sisters: 25, three_brothers: 26, stuttering_judge: 30, elder: 34, hunter: 35,
   rusty_knight: 36, bear_tamer: 37, pure_villager: 38, little_girl: 39, scapegoat: 40,
   village_fool: 41, devoted_servant: 42, angel: 43, raven: 45, pyromaniac: 46,
   protector: 55, werewolf: 60, infect_father: 65, fierce_wolf: 70,
-  albino_wolf: 75, witch: 80, flutist: 90, fox: 998, seer: 999,
+  albino_wolf: 62, witch: 80, flutist: 90, fox: 998, seer: 999,
 }
+
+export const ACTOR_CARD_KINDS = ['one-target', 'optional-one-target', 'two-targets', 'three-neighbours', 'witch']
+export const isActorCandidate = (id: RoleId) => ROLES[id].team !== 'wolves' && ROLES[id].category !== 'solitary' && id !== 'actor' && id !== 'wild_child' && ACTOR_CARD_KINDS.includes(ROLES[id].callKind ?? '')
+export const firstNightOrder = (id: RoleId) => FIRST_NIGHT_DISCOVERY_ORDER[id] ?? 500
 
 export function recommendedRoles(playerCount: number): RoleId[] {
   const wolves = playerCount >= 13 ? 3 : playerCount >= 8 ? 2 : 1

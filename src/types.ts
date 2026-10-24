@@ -35,8 +35,8 @@ export type SetupStep = 'players' | 'roles'
 export type GamePhase =
   | 'night-intro' | 'role-call' | 'night-result' | 'day-discussion' | 'day-vote'
   | 'hunter-action' | 'servant-action' | 'scapegoat-action' | 'game-over'
-export type Winner = 'village' | 'wolves' | 'angel' | 'flutist' | 'albino_wolf' | 'sectarian' | 'lovers'
-export type DeathCause = 'wolves' | 'fierce-wolf' | 'albino-wolf' | 'witch' | 'vote' | 'hunter' | 'love' | 'rusty-sickness' | 'little-girl'
+export type Winner = 'village' | 'wolves' | 'angel' | 'flutist' | 'albino_wolf' | 'sectarian' | 'lovers' | 'nobody'
+export type DeathCause = 'wolves' | 'fierce-wolf' | 'albino-wolf' | 'witch' | 'vote' | 'hunter' | 'love' | 'rusty-sickness' | 'little-girl' | 'fire'
 export type PostDeathAction = 'night-result' | 'next-night' | 'second-vote'
 
 export interface NightActions {
@@ -74,6 +74,7 @@ export interface GameState {
   judgeSecondVoteRequested: boolean
   judgeSecondVoteActive: boolean
   elderWolfHits: number
+  elderSurvivedAttack?: boolean
   villagePowersDisabled: boolean
   foolRevealed: boolean
   lastProtectedTargetId?: string
@@ -82,7 +83,10 @@ export interface GameState {
   infectedIds: string[]
   mentorId?: string
   wildChildTurned: boolean
+  actorCards?: RoleId[]
   actorUsedRoles: RoleId[]
+  thiefLeftovers?: RoleId[]
+  servantRestartRole?: RoleId
   sectarianGroups: Record<string, 'A' | 'B'>
   ravenVoteTargetId?: string
   burnedPlayerId?: string

@@ -2,14 +2,17 @@ import type { GameState } from './types'
 
 const STORAGE_KEY = 'lobo-narrador-active-game-v5'
 const PEOPLE_KEY = 'lobo-narrador-people-library-v4'
-const DEFAULT_PEOPLE = [
-  'Aleandro', 'Anitamari', 'Antoñito', 'Cristina', 'Dami', 'Daniela', 'Edu', 'Estefania',
-  'Leo', 'Lucia', 'Mari', 'Marina', 'Marta', 'Paloma', 'Paqui', 'Romi', 'Rosalil', 'Sandra',
-  'Sergio', 'Titantonio',
-]
+// Si el navegador no deja guardar (modo privado, sin espacio), la app sigue funcionando sin guardar
+function store(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Sin almacenamiento disponible
+  }
+}
 
 export function saveGame(game: GameState) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(game))
+  store(STORAGE_KEY, JSON.stringify(game))
 }
 
 export function loadGame(): GameState | null {
@@ -22,22 +25,26 @@ export function loadGame(): GameState | null {
 }
 
 export function clearGame() {
-  localStorage.removeItem(STORAGE_KEY)
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Sin almacenamiento disponible
+  }
 }
 
 export function loadPeople(): string[] {
   try {
     const value = localStorage.getItem(PEOPLE_KEY)
-    const saved = value ? JSON.parse(value) as string[] : []
-    const names = [...new Set([...DEFAULT_PEOPLE, ...(Array.isArray(saved) ? saved : [])])]
+    const saved: unknown = value ? JSON.parse(value) : null
+    const names = Array.isArray(saved) ? [...new Set(saved.filter((name): name is string => typeof name === 'string'))] : []
     return names.sort((a, b) => a.localeCompare(b, 'es'))
   } catch {
-    return [...DEFAULT_PEOPLE].sort((a, b) => a.localeCompare(b, 'es'))
+    return []
   }
 }
 
 export function savePeople(people: string[]) {
-  localStorage.setItem(PEOPLE_KEY, JSON.stringify(people))
+  store(PEOPLE_KEY, JSON.stringify(people))
 }
 
 const LAST_GROUP_KEY = 'lobo-narrador-last-group-v2'
@@ -61,5 +68,5 @@ export function loadLastGroups(): string[][] {
 }
 
 export function saveLastGroups(groups: string[][]) {
-  localStorage.setItem(LAST_GROUP_KEY, JSON.stringify(groups))
+  store(LAST_GROUP_KEY, JSON.stringify(groups))
 }

@@ -6,3 +6,6 @@ tmp
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
+# Reglamentos de referencia para desarrollar (no se publican)
+reglas
