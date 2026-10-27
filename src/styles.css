@@ -1834,6 +1834,226 @@ h1 em {
   background: var(--accent-gold-hover);
 }
 
+/* Grimorio PRO (Freemium & Paywall) */
+.grimorio-banner {
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  color: var(--text-main);
+  border: 1.5px solid var(--border-gold);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgb(212 175 55 / 0.14), rgb(19 17 24 / 0.96));
+  box-shadow: var(--card-shadow);
+}
+.grimorio-banner:hover {
+  border-color: var(--accent-gold);
+  background: linear-gradient(135deg, rgb(212 175 55 / 0.2), rgb(25 22 32 / 0.98));
+}
+.gameover-grimorio {
+  max-width: 680px;
+  margin: 12px auto 24px;
+}
+.grimorio-banner-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--accent-gold);
+  border: 1px solid var(--border-gold);
+  background: var(--accent-gold-bg);
+}
+.grimorio-banner strong, .grimorio-banner small {
+  display: block;
+}
+.grimorio-banner strong {
+  color: var(--accent-gold);
+  font-size: 15.5px;
+  font-weight: 700;
+}
+.grimorio-banner small {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.grimorio-cta {
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: var(--on-accent);
+  background: var(--accent-gold);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.grimorio-unlocked-pill {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-gold);
+  border: 1px solid var(--border-gold);
+  border-radius: 999px;
+  background: var(--accent-gold-bg);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.catalog-card.locked-role {
+  cursor: pointer;
+  opacity: 0.88;
+}
+.catalog-card.locked-role:hover {
+  opacity: 1;
+  border-color: var(--border-gold);
+}
+.pro-tag {
+  margin-left: 6px;
+  padding: 2px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+  color: var(--accent-gold);
+  border: 1px solid var(--border-gold);
+  border-radius: 999px;
+  background: var(--accent-gold-bg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.locked-counter {
+  display: flex;
+  justify-content: flex-end;
+}
+.unlock-role-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: var(--accent-gold);
+  border: 1px solid var(--border-gold);
+  border-radius: 10px;
+  background: var(--accent-gold-bg);
+}
+.unlock-role-btn:hover {
+  background: var(--accent-gold);
+  color: var(--on-accent);
+}
+.paywall-backdrop {
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.paywall-modal {
+  position: relative;
+  width: min(500px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 32px 28px;
+  text-align: center;
+  color: var(--text-main);
+  border: 1.5px solid var(--border-gold);
+  border-radius: 18px;
+  background: var(--bg-raised);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.75);
+}
+.paywall-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: var(--text-muted);
+  border-color: var(--border-strong);
+}
+.paywall-crest {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  color: var(--accent-gold);
+  border: 1.5px solid var(--border-gold);
+  border-radius: 16px;
+  background: var(--accent-gold-bg);
+}
+.paywall-modal h3 {
+  margin: 2px 0 10px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+}
+.paywall-lead {
+  margin: 0 auto 20px;
+  color: var(--text-muted);
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+.paywall-perks {
+  margin: 0 0 24px;
+  padding: 16px 18px;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  text-align: left;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--bg-card);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.paywall-perks li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: start;
+  gap: 10px;
+}
+.paywall-perks svg {
+  margin-top: 2px;
+  color: var(--accent-gold);
+}
+.paywall-actions {
+  display: grid;
+  gap: 12px;
+}
+.paywall-actions > .button {
+  width: 100%;
+}
+.paywall-subactions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.paywall-code-box {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+.paywall-code-box input {
+  min-height: 44px;
+  padding: 0 14px;
+  color: var(--text-main);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-input);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.paywall-status {
+  margin: 14px 0 0;
+  color: var(--accent-gold);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 /* Adaptación móvil (Touch targets >= 44px) */
 @media (max-width: 760px) {
   .home-shell::before { inset: 10px; }
@@ -1864,6 +2084,9 @@ h1 em {
 
   .role-grid { grid-template-columns: 1fr; }
   .catalog-grid, .people-grid, .rules-preset-bar { grid-template-columns: 1fr; }
+  .grimorio-banner { grid-template-columns: 40px 1fr; padding: 14px 16px; }
+  .grimorio-cta { grid-column: 1 / -1; text-align: center; }
+  .paywall-modal { padding: 24px 18px; }
   .debate-timer { padding: 12px 14px; }
   .timer-controls { width: 100%; justify-content: flex-end; }
   .timer-play-btn { flex: 1; justify-content: center; }

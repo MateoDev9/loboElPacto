@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { activateWithFounderCode, isAuthenticPlayReceipt, isProRole } from './billing'
 import {
   advanceRoleCall, applyActorChoice, applyThiefChoice, assignRoleOwners, beginScapegoatTie, canElectSheriff, createGame, determineWinner, eliminateByVote,
   electSheriff, prepareNextNight, resolveHunterShot, resolveNight, resolveScapegoat, resolveServantChoice, resolveSheriffSuccession, revealCard, unrevealedCards,
@@ -266,5 +267,25 @@ describe('variantes de reglamento (casa vs estándar)', () => {
     const tieState = beginScapegoatTie({ ...base, rules: OFFICIAL_RULES, lovers, phase: 'day-vote' })
     const result = resolveScapegoat(tieState, [id(base, 0), id(base, 3)])
     expect(result.pendingHunters).toHaveLength(0)
+  })
+})
+
+describe('Grimorio PRO y protección antifraude', () => {
+  it('mantiene gratis los 7 roles del mazo recomendado y marca como PRO los 24 especiales', () => {
+    expect(isProRole('werewolf')).toBe(false)
+    expect(isProRole('seer')).toBe(false)
+    expect(isProRole('witch')).toBe(false)
+    expect(isProRole('infect_father')).toBe(true)
+    expect(isProRole('flutist')).toBe(true)
+  })
+
+  it('rechaza recibos falsificados tipo Lucky Patcher / HappyMod y acepta recibos con formato Google Play GPA', () => {
+    expect(isAuthenticPlayReceipt({ orderId: '123456789', purchaseToken: 'fake-short' })).toBe(false)
+    expect(isAuthenticPlayReceipt({ orderId: 'GPA.3312-4591-8821-10294', purchaseToken: 'a'.repeat(48) })).toBe(true)
+  })
+
+  it('valida criptográficamente el código de fundador por SHA-256', async () => {
+    expect(await activateWithFounderCode('CODIGO-FALSO')).toBe(false)
+    expect(await activateWithFounderCode('WOLVES-FUNDADOR-2026')).toBe(true)
   })
 })

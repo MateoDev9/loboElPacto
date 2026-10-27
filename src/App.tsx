@@ -1,10 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, Bell, BookUser, Check, ChevronDown, CircleMinus, CirclePlus, Crosshair,
-  Dog, Eye, Feather, Flame, FlaskConical, Heart, HeartHandshake, History, Map, Moon, Music,
+  Dog, Eye, Feather, Flame, FlaskConical, Heart, HeartHandshake, History, KeyRound, Lock, Map, Moon, Music,
   Pause, PawPrint, Play, RotateCcw, Scale, ShieldCheck, Skull, SlidersHorizontal, Sparkles, Star, Sun, Timer, Trash2,
   TreeDeciduous, Undo2, Users, Volume2, Vote, Wheat, X,
 } from 'lucide-react'
+import {
+  activateWithFounderCode, isProRole, PRO_PRICE_LABEL, purchaseGrimorioPro, restoreGrimorioPurchase, verifyStoredEntitlement,
+} from './billing'
 import {
   advanceRoleCall, alivePlayers, aliveWolves, applyActorChoice, applyThiefChoice, assignRoleOwners, bearGrowls,
   beginScapegoatTie, canElectSheriff, createGame, electSheriff, eliminateByVote, foxTrio, isWolfAlignedPlayer,
@@ -98,8 +101,16 @@ function App() {
   const [game, setGame] = useState<GameState | null>(() => loadGame())
   // Estados anteriores de la partida para poder deshacer un toque equivocado (persistido en localStorage)
   const [history, setHistory] = useState<GameState[]>(() => loadHistory())
+  const [isPro, setIsPro] = useState(false)
+  const [showPaywall, setShowPaywall] = useState(false)
 
   useWakeLock(screen === 'game' && Boolean(game))
+
+  useEffect(() => {
+    void verifyStoredEntitlement().then((valid) => {
+      if (valid) setIsPro(true)
+    })
+  }, [])
 
   useEffect(() => { savePeople(people) }, [people])
   useEffect(() => { saveRules(rules) }, [rules])
@@ -140,13 +151,23 @@ function App() {
   }
   const endGame = () => { clearGame(); setGame(null); setHistory([]); setScreen('home') }
 
-  if (screen === 'library') return <PeopleLibrary people={people} addPerson={addPerson} removePerson={(name) => setPeople(people.filter((person) => person !== name))} onBack={() => setScreen('home')} />
+  const paywallModal = showPaywall ? (
+    <ProPaywallModal
+      onClose={() => setShowPaywall(false)}
+      onUnlocked={() => {
+        setIsPro(true)
+        setShowPaywall(false)
+      }}
+    />
+  ) : null
+
+  if (screen === 'library') return <>{paywallModal}<PeopleLibrary people={people} addPerson={addPerson} removePerson={(name) => setPeople(people.filter((person) => person !== name))} onBack={() => setScreen('home')} /></>
   if (screen === 'setup') {
-    if (setupStep === 'players') return <PlayersSetup people={people} names={names} setNames={setNames} addPerson={addPerson} onBack={() => setScreen('home')} onNext={goToRoles} />
-    return <DeckSetup playerCount={names.length} deck={deck} setDeck={setDeck} actorCards={actorCards} setActorCards={setActorCards} useSheriff={useSheriff} setUseSheriff={setUseSheriff} rules={rules} setRules={setRules} onBack={() => setSetupStep('players')} onNext={startGame} />
+    if (setupStep === 'players') return <>{paywallModal}<PlayersSetup people={people} names={names} setNames={setNames} addPerson={addPerson} onBack={() => setScreen('home')} onNext={goToRoles} /></>
+    return <>{paywallModal}<DeckSetup playerCount={names.length} deck={deck} setDeck={setDeck} actorCards={actorCards} setActorCards={setActorCards} useSheriff={useSheriff} setUseSheriff={setUseSheriff} rules={rules} setRules={setRules} isPro={isPro} onOpenPaywall={() => setShowPaywall(true)} onBack={() => setSetupStep('players')} onNext={startGame} /></>
   }
-  if (screen === 'game' && game) return <GameScreen game={game} setGame={updateGame} canUndo={history.length > 0} onUndo={undo} onExit={() => setScreen('home')} onEnd={endGame} />
-  return <Home hasGame={Boolean(game)} onNew={startNewSetup} onLibrary={() => setScreen('library')} onContinue={() => setScreen('game')} />
+  if (screen === 'game' && game) return <>{paywallModal}<GameScreen game={game} setGame={updateGame} canUndo={history.length > 0} onUndo={undo} isPro={isPro} onOpenPaywall={() => setShowPaywall(true)} onExit={() => setScreen('home')} onEnd={endGame} /></>
+  return <>{paywallModal}<Home hasGame={Boolean(game)} onNew={startNewSetup} onLibrary={() => setScreen('library')} onContinue={() => setScreen('game')} /></>
 }
 
 function Home({ hasGame, onNew, onLibrary, onContinue }: { hasGame: boolean; onNew: () => void; onLibrary: () => void; onContinue: () => void }) {
@@ -244,7 +265,7 @@ function PlayersSetup({ people, names, setNames, addPerson, onBack, onNext }: { 
 }
 
 function DeckSetup({
-  playerCount, deck, setDeck, actorCards, setActorCards, useSheriff, setUseSheriff, rules, setRules, onBack, onNext,
+  playerCount, deck, setDeck, actorCards, setActorCards, useSheriff, setUseSheriff, rules, setRules, isPro, onOpenPaywall, onBack, onNext,
 }: {
   playerCount: number
   deck: RoleId[]
@@ -255,6 +276,8 @@ function DeckSetup({
   setUseSheriff: (value: boolean) => void
   rules: GameRules
   setRules: (rules: GameRules) => void
+  isPro: boolean
+  onOpenPaywall: () => void
   onBack: () => void
   onNext: () => void
 }) {
@@ -266,6 +289,10 @@ function DeckSetup({
   const isRecommended = [...deck].sort().join() === recommendedRoles(playerCount).sort().join()
   const addCost = (id: RoleId) => id === 'two_sisters' ? 2 - (counts[id] ?? 0) : id === 'three_brothers' ? 3 - (counts[id] ?? 0) : 1
   const changeCount = (id: RoleId, delta: number) => {
+    if (delta > 0 && !isPro && isProRole(id)) {
+      onOpenPaywall()
+      return
+    }
     const groupedRole = id === 'two_sisters' || id === 'three_brothers'
     if (delta > 0) {
       const amount = groupedRole ? ROLES[id].maxCards - (counts[id] ?? 0) : 1
@@ -291,15 +318,28 @@ function DeckSetup({
 
   return <main className="app-shell"><PageHeader step="Paso 2 de 2" onBack={onBack} /><section className="setup-wrap roles-wrap">
     <div className="section-heading"><h2>Elige las cartas</h2><p>Puedes usar la combinación recomendada o ajustarla a las cartas físicas de tu mesa.</p></div>
+    {!isPro ? (
+      <button type="button" className="grimorio-banner" onClick={onOpenPaywall}>
+        <span className="grimorio-banner-icon" aria-hidden="true"><Sparkles size={20} /></span>
+        <div>
+          <strong>Grimorio Completo PRO · {PRO_PRICE_LABEL}</strong>
+          <small>Desbloquea los 24 personajes especiales (Infecto Padre, Flautista, Comediante, Ladrón, Cuervo…) con un único pago para siempre.</small>
+        </div>
+        <span className="grimorio-cta">Desbloquear</span>
+      </button>
+    ) : (
+      <div className="grimorio-unlocked-pill"><Sparkles size={14} aria-hidden="true" /> Grimorio Completo PRO activo · 31 personajes desbloqueados</div>
+    )}
     <div className="deck-summary"><span className="recommend-label"><Sparkles size={14} aria-hidden="true" /> {isRecommended ? 'Mazo recomendado' : 'Mazo personalizado'}</span><strong className={deck.length === cardTarget ? 'complete' : ''}>{deck.length} / {cardTarget} cartas</strong>{!isRecommended && <button className="text-button dark" onClick={() => setDeck(recommendedRoles(playerCount))}>Volver a la recomendación</button>}</div>
     {categories.map((category) => <section className="role-category" key={category}><h3>{CATEGORY_LABELS[category]}</h3><div className="catalog-grid">
       {ROLE_LIST.filter((item) => item.category === category).map((item) => {
         const count = counts[item.id] ?? 0
+        const locked = !isPro && isProRole(item.id)
         const description = item.id === 'two_sisters'
           ? (rules.sistersEveryNight ? 'Se reconocen cada noche antes de los Lobos.' : 'Se reconocen la primera noche.')
           : item.description
-        return <article className={`catalog-card ${count ? 'chosen' : ''}`} key={item.id} style={{ '--role-color': item.color } as React.CSSProperties}>
-          <RoleArtwork roleId={item.id} className="role-icon" /><div><strong>{item.name}</strong><small>{description}{item.id === 'two_sisters' ? ' Se añaden las 2 cartas.' : item.id === 'three_brothers' ? ' Se añaden las 3 cartas.' : ''}</small></div><div className="counter"><button disabled={!count} onClick={() => changeCount(item.id, -1)} aria-label={`Quitar ${item.name}`}><CircleMinus size={20} /></button><b>{count}</b><button disabled={count >= item.maxCards || deck.length + addCost(item.id) > cardTarget} onClick={() => changeCount(item.id, 1)} aria-label={`Añadir ${item.name}`}><CirclePlus size={20} /></button></div>
+        return <article className={`catalog-card ${count ? 'chosen' : ''} ${locked ? 'locked-role' : ''}`.trim()} key={item.id} style={{ '--role-color': item.color } as React.CSSProperties} onClick={locked ? onOpenPaywall : undefined}>
+          <RoleArtwork roleId={item.id} className="role-icon" /><div><strong>{item.name} {locked && <span className="pro-tag"><Lock size={11} /> PRO</span>}</strong><small>{description}{item.id === 'two_sisters' ? ' Se añaden las 2 cartas.' : item.id === 'three_brothers' ? ' Se añaden las 3 cartas.' : ''}</small></div>{locked ? <div className="counter locked-counter"><button type="button" className="unlock-role-btn" onClick={(e) => { e.stopPropagation(); onOpenPaywall() }} aria-label={`Desbloquear ${item.name} con Grimorio PRO`}><Lock size={16} /></button></div> : <div className="counter"><button disabled={!count} onClick={() => changeCount(item.id, -1)} aria-label={`Quitar ${item.name}`}><CircleMinus size={20} /></button><b>{count}</b><button disabled={count >= item.maxCards || deck.length + addCost(item.id) > cardTarget} onClick={() => changeCount(item.id, 1)} aria-label={`Añadir ${item.name}`}><CirclePlus size={20} /></button></div>}
         </article>
       })}
     </div></section>)}
@@ -451,7 +491,92 @@ function SpokenPrompt({ text }: { text?: string }) {
   )
 }
 
-function GameScreen({ game, setGame, canUndo, onUndo, onExit, onEnd }: { game: GameState; setGame: (game: GameState) => void; canUndo: boolean; onUndo: () => void; onExit: () => void; onEnd: () => void }) {
+function ProPaywallModal({ onClose, onUnlocked }: { onClose: () => void; onUnlocked: () => void }) {
+  const [showCodeBox, setShowCodeBox] = useState(false)
+  const [code, setCode] = useState('')
+  const [status, setStatus] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const handleBuy = async () => {
+    setBusy(true)
+    setStatus('')
+    const res = await purchaseGrimorioPro()
+    setBusy(false)
+    if (res.ok) {
+      onUnlocked()
+    } else if (res.message) {
+      setStatus(res.message)
+      setShowCodeBox(true)
+    }
+  }
+
+  const handleRestore = async () => {
+    setBusy(true)
+    setStatus('')
+    const res = await restoreGrimorioPurchase()
+    setBusy(false)
+    if (res.ok) {
+      onUnlocked()
+    } else {
+      setStatus(res.message)
+    }
+  }
+
+  const handleRedeem = async () => {
+    if (!code.trim()) return
+    setBusy(true)
+    const ok = await activateWithFounderCode(code)
+    setBusy(false)
+    if (ok) {
+      onUnlocked()
+    } else {
+      setStatus('El código introducido no es válido.')
+    }
+  }
+
+  return (
+    <div className="drawer-backdrop paywall-backdrop" onClick={onClose}>
+      <aside className="paywall-modal" role="dialog" aria-modal="true" aria-labelledby="paywall-title" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="icon-button paywall-close" onClick={onClose} aria-label="Cerrar"><X size={19} /></button>
+        <div className="paywall-crest"><WolfCrest size={34} /></div>
+        <span className="brand-kicker">Expansión Completa · Pago único</span>
+        <h3 id="paywall-title">Grimorio Completo PRO</h3>
+        <p className="paywall-lead">Desbloquea para siempre los <strong>24 personajes especiales</strong> y lleva tus partidas al siguiente nivel con un único pago, sin suscripciones ni anuncios.</p>
+        <ul className="paywall-perks">
+          <li><Check size={16} /> <strong>31 personajes en total:</strong> Infecto Padre, Lobo Feroz, Lobo Albino, Flautista, Comediante, Ladrón, Sirvienta, Zorro, Domador, Pirómano, Cuervo y más.</li>
+          <li><Check size={16} /> <strong>100 % sin conexión y sin anuncios:</strong> una sola compra en el móvil del narrador sirve para toda la mesa.</li>
+          <li><Check size={16} /> <strong>Para siempre en tu cuenta:</strong> incluye restauración de compra si cambias de teléfono.</li>
+        </ul>
+        <div className="paywall-actions">
+          <button type="button" className="button button-primary button-large" disabled={busy} onClick={handleBuy}>
+            <Sparkles size={18} /> Desbloquear por {PRO_PRICE_LABEL}
+          </button>
+          <div className="paywall-subactions">
+            <button type="button" className="text-button dark" disabled={busy} onClick={handleRestore}>Restaurar compra</button>
+            <button type="button" className="text-button dark" onClick={() => setShowCodeBox(!showCodeBox)}>
+              <KeyRound size={14} /> {showCodeBox ? 'Ocultar código' : 'Tengo un código'}
+            </button>
+          </div>
+        </div>
+        {showCodeBox && (
+          <div className="paywall-code-box">
+            <input
+              value={code}
+              onChange={(e) => { setCode(e.target.value); setStatus('') }}
+              onKeyDown={(e) => e.key === 'Enter' && void handleRedeem()}
+              placeholder="Código de desbloqueo"
+              aria-label="Código de desbloqueo"
+            />
+            <button type="button" className="button button-secondary" disabled={!code.trim() || busy} onClick={handleRedeem}>Validar</button>
+          </div>
+        )}
+        {status && <p className="paywall-status" role="status">{status}</p>}
+      </aside>
+    </div>
+  )
+}
+
+function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onExit, onEnd }: { game: GameState; setGame: (game: GameState) => void; canUndo: boolean; onUndo: () => void; isPro: boolean; onOpenPaywall: () => void; onExit: () => void; onEnd: () => void }) {
   const [showRoles, setShowRoles] = useState(false)
   const [showChorus, setShowChorus] = useState(true)
   const alive = alivePlayers(game)
@@ -595,7 +720,19 @@ function GameScreen({ game, setGame, canUndo, onUndo, onExit, onEnd }: { game: G
       {game.phase === 'sheriff-action' && <PlayerPicker players={alive} selected={[]} onSelect={(id) => setGame(resolveSheriffSuccession(game, id))} label="Nuevo Alguacil" />}
       {game.phase === 'servant-action' && <div className="decision-cards"><button onClick={() => setGame(resolveServantChoice(game, true))}><span className="icon-badge"><HeartHandshake size={24} /></span><strong>Adoptar el personaje</strong><small>La Sirvienta conserva la vida con la carta de {selectedName(game.pendingVoteTargetId)}.</small></button><button onClick={() => setGame(resolveServantChoice(game, false))}><span className="icon-badge"><Moon size={24} /></span><strong>No intervenir</strong><small>La persona elegida será eliminada normalmente.</small></button></div>}
       {game.phase === 'scapegoat-action' && <><PlayerPicker players={alive.filter((player) => player.id !== game.pendingVoteTargetId)} selected={game.scapegoatVoters} onSelect={(id) => setGame({ ...game, scapegoatVoters: game.scapegoatVoters.includes(id) ? game.scapegoatVoters.filter((item) => item !== id) : [...game.scapegoatVoters, id] })} label="Podrán votar la próxima vez" /><div className="game-action"><button className="button button-dark button-large" disabled={!game.scapegoatVoters.length} onClick={() => setGame(resolveScapegoat(game, game.scapegoatVoters))}>Confirmar decisión <ArrowRight size={19} /></button></div></>}
-      {game.phase === 'game-over' && <div className="game-action"><button className="button button-light button-large" onClick={onEnd}><RotateCcw size={19} /> Volver al inicio</button></div>}
+      {game.phase === 'game-over' && <>
+        {!isPro && (
+          <button type="button" className="grimorio-banner gameover-grimorio" onClick={onOpenPaywall}>
+            <span className="grimorio-banner-icon" aria-hidden="true"><Sparkles size={20} /></span>
+            <div>
+              <strong>¿Queréis más roles para la siguiente partida?</strong>
+              <small>Desbloquea el Grimorio Completo PRO (24 personajes extra) por un único pago de {PRO_PRICE_LABEL} entre toda la mesa.</small>
+            </div>
+            <span className="grimorio-cta">Ver PRO</span>
+          </button>
+        )}
+        <div className="game-action"><button className="button button-light button-large" onClick={onEnd}><RotateCcw size={19} /> Volver al inicio</button></div>
+      </>}
     </section><footer className="alive-strip"><span><span className="alive-dot" /> {alive.length} con vida</span><span>{game.players.length - alive.length} eliminados</span></footer>
   </main></SeatContext.Provider>
 }
