@@ -1,12 +1,12 @@
 // Permite usar la app sin conexión: la página se pide primero a la red y el resto de archivos sale de la caché
-const CACHE = 'lobo-narrador-v4'
+const CACHE = 'lobo-narrador-v5'
 const CARDS = [
   'actor', 'albino_wolf', 'angel', 'bear_tamer', 'cupid', 'devoted_servant', 'elder', 'fierce_wolf', 'flutist', 'fox',
   'hunter', 'infect_father', 'little_girl', 'protector', 'pyromaniac', 'raven', 'rusty_knight', 'scapegoat', 'sectarian',
   'seer', 'stuttering_judge', 'thief', 'three_brothers', 'two_sisters', 'village_fool', 'villager', 'werewolf', 'wild_child',
   'witch', 'wolf_hound',
 ]
-const STATIC_FILES = ['./', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', ...CARDS.map((card) => `cards/${card}.webp?v=4`)]
+const STATIC_FILES = ['./', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', ...CARDS.map((card) => `cards/${card}.webp?v=5`)]
 
 // Los archivos de la app llevan un código en el nombre que cambia en cada versión: se leen de la página y de su CSS
 async function appFiles() {
