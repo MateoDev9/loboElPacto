@@ -18,6 +18,7 @@ export interface RoleDefinition {
   shortName: string
   description: string
   narratorPrompt: string
+  spokenPrompt?: string
   team: Team
   category: RoleCategory
   icon: string
@@ -30,13 +31,24 @@ export interface RoleDefinition {
   passive?: boolean
 }
 
+export interface GameRules {
+  /** El Alguacil solo desempata en caso de empate (regla de la casa) en vez de tener voto doble siempre */
+  sheriffTiebreakOnly: boolean
+  /** Las Dos Hermanas despiertan todas las noches antes de los lobos en vez de solo la primera noche */
+  sistersEveryNight: boolean
+  /** La Vidente y el Zorro despiertan los últimos la primera noche, después del Infecto Padre */
+  seerFoxLastFirstNight: boolean
+  /** El Cazador dispara siempre que muere, incluso por mal de amores o empate del Cabeza de Turco */
+  hunterAlwaysShoots: boolean
+}
+
 export interface Player { id: string; name: string; roleId?: RoleId; alive: boolean }
 export type SetupStep = 'players' | 'roles'
 export type GamePhase =
   | 'night-intro' | 'role-call' | 'night-result' | 'day-discussion' | 'day-vote'
   | 'hunter-action' | 'sheriff-action' | 'servant-action' | 'scapegoat-action' | 'game-over'
 export type Winner = 'village' | 'wolves' | 'angel' | 'flutist' | 'albino_wolf' | 'sectarian' | 'lovers' | 'nobody'
-export type DeathCause = 'wolves' | 'fierce-wolf' | 'albino-wolf' | 'witch' | 'vote' | 'hunter' | 'love' | 'rusty-sickness' | 'little-girl' | 'fire'
+export type DeathCause = 'wolves' | 'fierce-wolf' | 'albino-wolf' | 'witch' | 'vote' | 'scapegoat' | 'hunter' | 'love' | 'rusty-sickness' | 'little-girl' | 'fire'
 export type PostDeathAction = 'night-result' | 'next-night' | 'second-vote'
 
 export interface NightActions {
@@ -58,6 +70,7 @@ export interface NightActions {
 export interface GameState {
   players: Player[]
   deck: RoleId[]
+  rules?: GameRules
   roleChoices: Partial<Record<RoleId, string>>
   round: number
   openingDay: boolean
@@ -77,7 +90,7 @@ export interface GameState {
   elderSurvivedAttack?: boolean
   villagePowersDisabled: boolean
   foolRevealed: boolean
-  lastProtectedTargetId?: string
+  lastProtectedTargetId?: boolean | string
   lovers: string[]
   charmedIds: string[]
   infectedIds: string[]

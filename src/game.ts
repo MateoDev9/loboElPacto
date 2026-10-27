@@ -1,17 +1,23 @@
-import { buildFirstNightSequence, buildNightSequence, firstNightOrder, isVillagePower, isWolfRole, ROLES } from './roles'
-import type { DeathCause, GamePhase, GameState, Player, PostDeathAction, RoleId } from './types'
+import { buildFirstNightSequence, buildNightSequence, firstNightOrder, HOUSE_RULES, isVillagePower, isWolfRole, ROLES } from './roles'
+import type { DeathCause, GamePhase, GameRules, GameState, Player, PostDeathAction, RoleId } from './types'
 
 const emptyNight = (): GameState['night'] => ({
   targets: {}, skippedRoles: [], infectVictim: false, littleGirlCaught: false, witchSaved: false,
 })
 
-export const createGame = (names: string[], deck: RoleId[], actorCards: RoleId[] = [], options: { sheriff?: boolean } = {}): GameState => {
+export const createGame = (
+  names: string[],
+  deck: RoleId[],
+  actorCards: RoleId[] = [],
+  options: { sheriff?: boolean; rules?: Partial<GameRules> } = {},
+): GameState => {
   const players: Player[] = names.map((name) => ({ id: crypto.randomUUID(), name, alive: true }))
   const openingDay = deck.includes('angel')
+  const rules: GameRules = { ...HOUSE_RULES, ...options.rules }
   return {
-    players, deck, roleChoices: {}, round: 1, openingDay,
+    players, deck, rules, roleChoices: {}, round: 1, openingDay,
     phase: 'night-intro',
-    night: emptyNight(), nightSequence: openingDay ? ['angel'] : buildFirstNightSequence(deck), sequenceIndex: 0,
+    night: emptyNight(), nightSequence: openingDay ? ['angel'] : buildFirstNightSequence(deck, rules), sequenceIndex: 0,
     healPotionAvailable: true, poisonPotionAvailable: true, infectionAvailable: true,
     pyromaniacAvailable: true, foxPowerAvailable: true, judgePowerAvailable: true,
     judgeSecondVoteRequested: false, judgeSecondVoteActive: false, elderWolfHits: 0, villagePowersDisabled: false,
@@ -95,7 +101,7 @@ export function applyThiefChoice(game: GameState, adoptedRole: RoleId): GameStat
   if (adoptedRole !== 'thief') deck = [...removeCards(deck, ['thief']), adoptedRole]
   const players = adoptedRole === 'thief' ? game.players : game.players.map((player) => player.roleId === 'thief' ? { ...player, roleId: adoptedRole } : player)
   const completed = game.nightSequence.slice(0, game.sequenceIndex + 1)
-  const desired = buildFirstNightSequence(deck).filter((roleId) => roleId !== 'angel')
+  const desired = buildFirstNightSequence(deck, game.rules).filter((roleId) => roleId !== 'angel')
   const remaining = desired.filter((roleId) => !completed.includes(roleId))
   return { ...game, deck, players, nightSequence: [...completed, ...remaining] }
 }
@@ -104,7 +110,7 @@ export function applyActorChoice(game: GameState): GameState {
   const roleId = game.night.actorRoleId
   if (!roleId) return game
   // El Comediante actúa en el turno del personaje elegido, como si tuviera su carta
-  const order = (id: RoleId) => game.round === 1 ? firstNightOrder(id) : ROLES[id].nightOrder ?? 999
+  const order = (id: RoleId) => game.round === 1 ? firstNightOrder(id, game.rules) : ROLES[id].nightOrder ?? 999
   const completed = game.nightSequence.slice(0, game.sequenceIndex + 1)
   const remaining = game.nightSequence.slice(game.sequenceIndex + 1)
   const position = remaining.findIndex((id) => order(id) > order(roleId))
@@ -115,7 +121,7 @@ export function applyActorChoice(game: GameState): GameState {
 const SERVANT_RESTART_CALLS: RoleId[] = ['wild_child', 'stuttering_judge', 'three_brothers']
 
 const filteredNightSequence = (game: GameState, round: number) => {
-  let sequence = buildNightSequence(game.players, round)
+  let sequence = buildNightSequence(game.players, round, game.rules)
   if (aliveWolves(game).length && !sequence.includes('werewolf')) sequence.push('werewolf')
   if (!game.foxPowerAvailable) sequence = sequence.filter((id) => id !== 'fox')
   if (!game.infectionAvailable) sequence = sequence.filter((id) => id !== 'infect_father')
@@ -209,14 +215,18 @@ function applyDeaths(game: GameState, deaths: Array<{ playerId?: string; cause: 
     }
 
     if (player.id === next.sheriffId) next = { ...next, sheriffId: undefined, sheriffSuccessionPending: true }
-    if (player.roleId === 'hunter' && !next.villagePowersDisabled && !next.pendingHunters.includes(player.id)) next.pendingHunters = [...next.pendingHunters, player.id]
+    const hunterAlwaysShoots = next.rules?.hunterAlwaysShoots ?? true
+    const canHunterShoot = hunterAlwaysShoots || (death.cause !== 'love' && death.cause !== 'scapegoat')
+    if (player.roleId === 'hunter' && !next.villagePowersDisabled && canHunterShoot && !next.pendingHunters.includes(player.id)) {
+      next.pendingHunters = [...next.pendingHunters, player.id]
+    }
     if (player.id === next.mentorId) next = { ...next, wildChildTurned: true }
     if (player.roleId === 'rusty_knight' && wolfAttack && !next.villagePowersDisabled) next = { ...next, rustyWolfDeathRound: next.round + 1 }
     if (next.lovers.includes(player.id)) {
       const partnerId = next.lovers.find((id) => id !== player.id)
       if (partnerId) queue.push({ playerId: partnerId, cause: 'love' })
     }
-    if (player.roleId === 'angel' && ((next.openingDay && death.cause === 'vote') || (next.round === 1 && wolfAttack))) {
+    if (player.roleId === 'angel' && ((next.openingDay && (death.cause === 'vote' || death.cause === 'scapegoat')) || (next.round === 1 && wolfAttack))) {
       next = { ...next, winner: 'angel' }
     }
   }
@@ -268,7 +278,7 @@ export function resolveNight(game: GameState): GameState {
 
 export function advanceRoleCall(game: GameState): GameState {
   if (game.openingDay && game.nightSequence[game.sequenceIndex] === 'angel') {
-    return { ...game, phase: 'day-discussion', nightSequence: buildFirstNightSequence(game.deck).filter((id) => id !== 'angel'), sequenceIndex: 0 }
+    return { ...game, phase: 'day-discussion', nightSequence: buildFirstNightSequence(game.deck, game.rules).filter((id) => id !== 'angel'), sequenceIndex: 0 }
   }
   const nextIndex = game.sequenceIndex + 1
   if (nextIndex >= game.nightSequence.length) return resolveNight(game)
@@ -373,7 +383,7 @@ export function beginScapegoatTie(game: GameState): GameState {
 }
 
 export function resolveScapegoat(game: GameState, voterIds: string[]): GameState {
-  return applyDeaths({ ...game, scapegoatVoters: voterIds, lastDeaths: [], pendingHunters: [] }, [{ playerId: game.pendingVoteTargetId, cause: 'vote' }], 'next-night')
+  return applyDeaths({ ...game, scapegoatVoters: voterIds, lastDeaths: [], pendingHunters: [] }, [{ playerId: game.pendingVoteTargetId, cause: 'scapegoat' }], 'next-night')
 }
 
 export function bearGrowls(game: GameState) {

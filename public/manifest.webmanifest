@@ -1,6 +1,6 @@
 {
-  "name": "Lobo: asistente del narrador",
-  "short_name": "Lobo",
+  "name": "Wolves: El pueblo duerme",
+  "short_name": "Wolves",
   "description": "Prepara el mazo, ubica las cartas la primera noche y dirige cada turno de la partida.",
   "lang": "es",
   "start_url": "./",

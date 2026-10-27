@@ -1,23 +1,80 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowLeft, ArrowRight, BookUser, Check, ChevronDown, CircleMinus, CirclePlus, Crosshair,
+  ArrowLeft, ArrowRight, Bell, BookUser, Check, ChevronDown, CircleMinus, CirclePlus, Crosshair,
   Dog, Eye, Feather, Flame, FlaskConical, Heart, HeartHandshake, History, Map, Moon, Music,
-  PawPrint, Play, RotateCcw, Scale, ShieldCheck, Skull, Sparkles, Star, Sun, Trash2,
-  TreeDeciduous, Undo2, Users, Vote, Wheat, X,
+  Pause, PawPrint, Play, RotateCcw, Scale, ShieldCheck, Skull, SlidersHorizontal, Sparkles, Star, Sun, Timer, Trash2,
+  TreeDeciduous, Undo2, Users, Volume2, Vote, Wheat, X,
 } from 'lucide-react'
 import {
   advanceRoleCall, alivePlayers, aliveWolves, applyActorChoice, applyThiefChoice, assignRoleOwners, bearGrowls,
   beginScapegoatTie, canElectSheriff, createGame, electSheriff, eliminateByVote, foxTrio, isWolfAlignedPlayer,
   phaseAfterNoVote, resolveHunterShot, resolveScapegoat, resolveServantChoice, resolveSheriffSuccession, revealCard, unrevealedCards,
 } from './game'
-import { CATEGORY_LABELS, isActorCandidate, isWolfRole, recommendedRoles, ROLE_LIST, ROLES } from './roles'
-import { clearGame, loadGame, loadLastGroups, loadPeople, saveGame, saveLastGroups, savePeople } from './storage'
-import type { GameState, Player, RoleCategory, RoleId, SetupStep, Winner } from './types'
+import { CATEGORY_LABELS, HOUSE_RULES, isActorCandidate, isWolfRole, OFFICIAL_RULES, recommendedRoles, ROLE_LIST, ROLES } from './roles'
+import { clearGame, loadGame, loadHistory, loadLastGroups, loadPeople, loadRules, saveGame, saveHistory, saveLastGroups, savePeople, saveRules } from './storage'
+import type { GameRules, GameState, Player, RoleCategory, RoleId, SetupStep, Winner } from './types'
 
 type Screen = 'home' | 'library' | 'setup' | 'game'
 
 // Número de asiento de cada jugador: los selectores lo muestran para relacionarlos con el coro
 const SeatContext = createContext<Record<string, number>>({})
+
+function useWakeLock(active: boolean) {
+  useEffect(() => {
+    if (!active || typeof navigator === 'undefined' || !('wakeLock' in navigator)) return
+    let sentinel: WakeLockSentinel | null = null
+    let cancelled = false
+
+    const requestLock = async () => {
+      try {
+        if (document.visibilityState === 'visible' && !cancelled) {
+          sentinel = await navigator.wakeLock.request('screen')
+        }
+      } catch {
+        // El navegador o el ahorro de batería no permite Wake Lock
+      }
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void requestLock()
+    }
+
+    void requestLock()
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', handleVisibility)
+      void sentinel?.release().catch(() => {})
+    }
+  }, [active])
+}
+
+function playTimerChime() {
+  try {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate([220, 100, 280])
+    }
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!AudioCtx) return
+    const ctx = new AudioCtx()
+    const now = ctx.currentTime
+    ;[528, 660].forEach((freq, idx) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(freq, now + idx * 0.22)
+      gain.gain.setValueAtTime(0.001, now + idx * 0.22)
+      gain.gain.exponentialRampToValueAtTime(0.18, now + idx * 0.22 + 0.03)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.22 + 0.9)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(now + idx * 0.22)
+      osc.stop(now + idx * 0.22 + 0.95)
+    })
+  } catch {
+    // Sin audio disponible
+  }
+}
 
 function WolfCrest({ size = 28 }: { size?: number }) {
   return (
@@ -37,15 +94,20 @@ function App() {
   const [deck, setDeck] = useState<RoleId[]>([])
   const [actorCards, setActorCards] = useState<RoleId[]>([])
   const [useSheriff, setUseSheriff] = useState(false)
+  const [rules, setRules] = useState<GameRules>(() => loadRules())
   const [game, setGame] = useState<GameState | null>(() => loadGame())
-  // Estados anteriores de la partida para poder deshacer un toque equivocado (solo en memoria)
-  const [history, setHistory] = useState<GameState[]>([])
+  // Estados anteriores de la partida para poder deshacer un toque equivocado (persistido en localStorage)
+  const [history, setHistory] = useState<GameState[]>(() => loadHistory())
+
+  useWakeLock(screen === 'game' && Boolean(game))
 
   useEffect(() => { savePeople(people) }, [people])
+  useEffect(() => { saveRules(rules) }, [rules])
   useEffect(() => { if (game) saveGame(game) }, [game])
+  useEffect(() => { saveHistory(history) }, [history])
 
   const updateGame = (next: GameState) => {
-    if (game) setHistory((previous) => [...previous.slice(-49), game])
+    if (game) setHistory((previous) => [...previous.slice(-14), game])
     setGame(next)
   }
   const undo = () => {
@@ -70,7 +132,7 @@ function App() {
     setSetupStep('roles')
   }
   const startGame = () => {
-    setGame(createGame(names, deck, deck.includes('actor') ? actorCards.filter((id) => !deck.includes(id)) : [], { sheriff: useSheriff }))
+    setGame(createGame(names, deck, deck.includes('actor') ? actorCards.filter((id) => !deck.includes(id)) : [], { sheriff: useSheriff, rules }))
     setHistory([])
     const previous = loadLastGroups().filter((group) => group.join(',') !== names.join(','))
     saveLastGroups([names, ...previous].slice(0, 10))
@@ -81,7 +143,7 @@ function App() {
   if (screen === 'library') return <PeopleLibrary people={people} addPerson={addPerson} removePerson={(name) => setPeople(people.filter((person) => person !== name))} onBack={() => setScreen('home')} />
   if (screen === 'setup') {
     if (setupStep === 'players') return <PlayersSetup people={people} names={names} setNames={setNames} addPerson={addPerson} onBack={() => setScreen('home')} onNext={goToRoles} />
-    return <DeckSetup playerCount={names.length} deck={deck} setDeck={setDeck} actorCards={actorCards} setActorCards={setActorCards} useSheriff={useSheriff} setUseSheriff={setUseSheriff} onBack={() => setSetupStep('players')} onNext={startGame} />
+    return <DeckSetup playerCount={names.length} deck={deck} setDeck={setDeck} actorCards={actorCards} setActorCards={setActorCards} useSheriff={useSheriff} setUseSheriff={setUseSheriff} rules={rules} setRules={setRules} onBack={() => setSetupStep('players')} onNext={startGame} />
   }
   if (screen === 'game' && game) return <GameScreen game={game} setGame={updateGame} canUndo={history.length > 0} onUndo={undo} onExit={() => setScreen('home')} onEnd={endGame} />
   return <Home hasGame={Boolean(game)} onNew={startNewSetup} onLibrary={() => setScreen('library')} onContinue={() => setScreen('game')} />
@@ -90,7 +152,8 @@ function App() {
 function Home({ hasGame, onNew, onLibrary, onContinue }: { hasGame: boolean; onNew: () => void; onLibrary: () => void; onContinue: () => void }) {
   return <main className="home-shell"><section className="home-content">
     <div className="brand-mark" aria-hidden="true"><WolfCrest size={38} /></div>
-    <h1>La aldea duerme.<br /><em>Es hora de empezar.</em></h1>
+    <span className="brand-kicker">Wolves · El pueblo duerme</span>
+    <h1>El pueblo duerme.<br /><em>Es hora de empezar.</em></h1>
     <p className="hero-copy">Prepara las cartas físicas, anota quién tiene cada una conforme despierten la primera noche y dirige cada turno sin consultar el reglamento.</p>
     <div className="home-actions">
       <button className="button button-primary button-large" onClick={onNew}><CirclePlus size={20} /> Nueva partida</button>
@@ -107,7 +170,7 @@ function Home({ hasGame, onNew, onLibrary, onContinue }: { hasGame: boolean; onN
 }
 
 function PageHeader({ step, onBack }: { step: string; onBack: () => void }) {
-  return <header className="page-header"><button className="icon-button" onClick={onBack} aria-label="Volver"><ArrowLeft size={20} /></button><div className="mini-brand"><WolfCrest size={20} /> Lobo</div><span className="step-label">{step}</span></header>
+  return <header className="page-header"><button className="icon-button" onClick={onBack} aria-label="Volver"><ArrowLeft size={20} /></button><div className="mini-brand"><WolfCrest size={20} /> Wolves</div><span className="step-label">{step}</span></header>
 }
 
 function PersonAdder({ people, addPerson, onAdded, onExisting }: { people: string[]; addPerson: (name: string) => boolean; onAdded?: (name: string) => void; onExisting?: (name: string) => void }) {
@@ -152,7 +215,7 @@ function PlayersSetup({ people, names, setNames, addPerson, onBack, onNext }: { 
       setSelectedSeatIndex(null)
     }
   }
-  const lastGroups = useMemo(() => loadLastGroups().filter((group) => group.every((name) => people.includes(name))), [])
+  const lastGroups = useMemo(() => loadLastGroups().filter((group) => group.every((name) => people.includes(name))), [people])
   return <main className="app-shell"><PageHeader step="Paso 1 de 2" onBack={onBack} /><section className="setup-wrap">
     <div className="section-heading"><h2>¿Quién juega hoy?</h2><p>Marca quién está hoy en la mesa. Después podrás colocar sus nombres en el orden de los asientos.</p></div>
     {lastGroups.length > 0 && names.length === 0 && <div className="history-groups">
@@ -180,7 +243,22 @@ function PlayersSetup({ people, names, setNames, addPerson, onBack, onNext }: { 
   </section></main>
 }
 
-function DeckSetup({ playerCount, deck, setDeck, actorCards, setActorCards, useSheriff, setUseSheriff, onBack, onNext }: { playerCount: number; deck: RoleId[]; setDeck: (deck: RoleId[]) => void; actorCards: RoleId[]; setActorCards: (cards: RoleId[]) => void; useSheriff: boolean; setUseSheriff: (value: boolean) => void; onBack: () => void; onNext: () => void }) {
+function DeckSetup({
+  playerCount, deck, setDeck, actorCards, setActorCards, useSheriff, setUseSheriff, rules, setRules, onBack, onNext,
+}: {
+  playerCount: number
+  deck: RoleId[]
+  setDeck: (deck: RoleId[]) => void
+  actorCards: RoleId[]
+  setActorCards: (cards: RoleId[]) => void
+  useSheriff: boolean
+  setUseSheriff: (value: boolean) => void
+  rules: GameRules
+  setRules: (rules: GameRules) => void
+  onBack: () => void
+  onNext: () => void
+}) {
+  const [customizeRules, setCustomizeRules] = useState(false)
   const counts = countRoles(deck)
   const categories: RoleCategory[] = ['wolves', 'village', 'ambiguous', 'solitary', 'village-expansion']
   // Con el Ladrón se reparten 2 cartas de más, que quedan boca abajo en el centro
@@ -207,20 +285,170 @@ function DeckSetup({ playerCount, deck, setDeck, actorCards, setActorCards, useS
   const actorReady = !counts.actor || chosenActorCards.length === Math.min(3, actorCandidates.length)
   const completeGroups = (!counts.two_sisters || counts.two_sisters === 2) && (!counts.three_brothers || counts.three_brothers === 3)
   const valid = deck.length === cardTarget && deck.some(isWolfRole) && completeGroups && actorReady
+
+  const isHousePreset = rules.sheriffTiebreakOnly && rules.sistersEveryNight && rules.seerFoxLastFirstNight && rules.hunterAlwaysShoots
+  const isOfficialPreset = !rules.sheriffTiebreakOnly && !rules.sistersEveryNight && !rules.seerFoxLastFirstNight && !rules.hunterAlwaysShoots
+
   return <main className="app-shell"><PageHeader step="Paso 2 de 2" onBack={onBack} /><section className="setup-wrap roles-wrap">
     <div className="section-heading"><h2>Elige las cartas</h2><p>Puedes usar la combinación recomendada o ajustarla a las cartas físicas de tu mesa.</p></div>
     <div className="deck-summary"><span className="recommend-label"><Sparkles size={14} aria-hidden="true" /> {isRecommended ? 'Mazo recomendado' : 'Mazo personalizado'}</span><strong className={deck.length === cardTarget ? 'complete' : ''}>{deck.length} / {cardTarget} cartas</strong>{!isRecommended && <button className="text-button dark" onClick={() => setDeck(recommendedRoles(playerCount))}>Volver a la recomendación</button>}</div>
     {categories.map((category) => <section className="role-category" key={category}><h3>{CATEGORY_LABELS[category]}</h3><div className="catalog-grid">
-      {ROLE_LIST.filter((item) => item.category === category).map((item) => { const count = counts[item.id] ?? 0; return <article className={`catalog-card ${count ? 'chosen' : ''}`} key={item.id} style={{ '--role-color': item.color } as React.CSSProperties}>
-        <RoleArtwork roleId={item.id} className="role-icon" /><div><strong>{item.name}</strong><small>{item.description}{item.id === 'two_sisters' ? ' Se añaden las 2 cartas.' : item.id === 'three_brothers' ? ' Se añaden las 3 cartas.' : ''}</small></div><div className="counter"><button disabled={!count} onClick={() => changeCount(item.id, -1)} aria-label={`Quitar ${item.name}`}><CircleMinus size={20} /></button><b>{count}</b><button disabled={count >= item.maxCards || deck.length + addCost(item.id) > cardTarget} onClick={() => changeCount(item.id, 1)} aria-label={`Añadir ${item.name}`}><CirclePlus size={20} /></button></div>
-      </article> })}
+      {ROLE_LIST.filter((item) => item.category === category).map((item) => {
+        const count = counts[item.id] ?? 0
+        const description = item.id === 'two_sisters'
+          ? (rules.sistersEveryNight ? 'Se reconocen cada noche antes de los Lobos.' : 'Se reconocen la primera noche.')
+          : item.description
+        return <article className={`catalog-card ${count ? 'chosen' : ''}`} key={item.id} style={{ '--role-color': item.color } as React.CSSProperties}>
+          <RoleArtwork roleId={item.id} className="role-icon" /><div><strong>{item.name}</strong><small>{description}{item.id === 'two_sisters' ? ' Se añaden las 2 cartas.' : item.id === 'three_brothers' ? ' Se añaden las 3 cartas.' : ''}</small></div><div className="counter"><button disabled={!count} onClick={() => changeCount(item.id, -1)} aria-label={`Quitar ${item.name}`}><CircleMinus size={20} /></button><b>{count}</b><button disabled={count >= item.maxCards || deck.length + addCost(item.id) > cardTarget} onClick={() => changeCount(item.id, 1)} aria-label={`Añadir ${item.name}`}><CirclePlus size={20} /></button></div>
+        </article>
+      })}
     </div></section>)}
     {counts.actor ? <section className="role-category"><h3>Cartas del Comediante</h3><p className="optional-note">Elige 3 cartas con poder que no estén en el mazo; ninguna puede ser de lobo. Se colocan boca arriba en el centro y no se reparten.</p><PlayerPicker players={actorCandidates.map((item) => ({ id: item.id, name: item.name, alive: true }))} selected={chosenActorCards} onSelect={(id) => toggleActorCard(id as RoleId)} label={`${chosenActorCards.length} / 3 elegidas`} /></section> : null}
     {!deck.some(isWolfRole) && <p className="form-error">Incluye al menos un Hombre Lobo.</p>}
-    <section className="role-category"><h3>Cargos</h3><ToggleCard active={useSheriff} icon={<Star size={22} />} title="Jugar con Alguacil" text="La aldea elige a un Alguacil durante el día. Su voto cuenta doble y, si muere, nombra a su sucesor." onClick={() => setUseSheriff(!useSheriff)} /></section>
+    <section className="role-category">
+      <h3>Cargos</h3>
+      <ToggleCard
+        active={useSheriff}
+        icon={<Star size={22} />}
+        title="Jugar con Alguacil"
+        text={rules.sheriffTiebreakOnly
+          ? 'La aldea elige a un Alguacil durante el día. Su voto solo decide en caso de empate y, si muere, nombra a su sucesor.'
+          : 'La aldea elige a un Alguacil durante el día. Su voto cuenta doble y, si muere, nombra a su sucesor.'}
+        onClick={() => setUseSheriff(!useSheriff)}
+      />
+    </section>
+    <section className="role-category">
+      <div className="rules-header-row">
+        <h3>Variantes de reglas</h3>
+        <button type="button" className="text-button dark" onClick={() => setCustomizeRules(!customizeRules)}>
+          <SlidersHorizontal size={14} /> {customizeRules ? 'Ocultar ajustes' : 'Personalizar'}
+        </button>
+      </div>
+      <div className="rules-preset-bar" role="group" aria-label="Modo de reglamento">
+        <button type="button" className={`preset-pill ${isHousePreset ? 'selected' : ''}`} onClick={() => setRules({ ...HOUSE_RULES })}>
+          <strong>Reglas de la casa</strong>
+          <small>Alguacil solo desempata · Vidente al final Noche 1 · Hermanas cada noche · Cazador dispara siempre</small>
+        </button>
+        <button type="button" className={`preset-pill ${isOfficialPreset ? 'selected' : ''}`} onClick={() => setRules({ ...OFFICIAL_RULES })}>
+          <strong>Reglamento estándar</strong>
+          <small>Alguacil voto doble · Orden clásico Noche 1 · Hermanas Noche 1 · Cazador sin tiro por amor o empate</small>
+        </button>
+      </div>
+      {customizeRules && (
+        <div className="rules-custom-grid">
+          <ToggleCard
+            active={rules.sheriffTiebreakOnly}
+            icon={<Star size={20} />}
+            title="El Alguacil solo tiene voto doble ante un empate"
+            text={rules.sheriffTiebreakOnly ? 'De normal su voto vale 1; si hay empate, decide quién sale.' : 'Su voto cuenta doble en todas las votaciones.'}
+            onClick={() => setRules({ ...rules, sheriffTiebreakOnly: !rules.sheriffTiebreakOnly })}
+          />
+          <ToggleCard
+            active={rules.seerFoxLastFirstNight}
+            icon={<Eye size={20} />}
+            title="Vidente y Zorro al final de la primera noche"
+            text={rules.seerFoxLastFirstNight ? 'Despiertan tras el Infecto Padre para observar el bando real.' : 'Despiertan antes que los Lobos en la primera noche.'}
+            onClick={() => setRules({ ...rules, seerFoxLastFirstNight: !rules.seerFoxLastFirstNight })}
+          />
+          <ToggleCard
+            active={rules.sistersEveryNight}
+            icon={<Users size={20} />}
+            title="Las Dos Hermanas despiertan todas las noches"
+            text={rules.sistersEveryNight ? 'Se comunican con gestos cada noche antes de los Lobos.' : 'Solo se reconocen durante la primera noche.'}
+            onClick={() => setRules({ ...rules, sistersEveryNight: !rules.sistersEveryNight })}
+          />
+          <ToggleCard
+            active={rules.hunterAlwaysShoots}
+            icon={<Crosshair size={20} />}
+            title="El Cazador dispara muera como muera"
+            text={rules.hunterAlwaysShoots ? 'Dispara incluso si muere de pena o por empate del Cabeza de Turco.' : 'No dispara si muere de pena por Cupido o por empate del Cabeza de Turco.'}
+            onClick={() => setRules({ ...rules, hunterAlwaysShoots: !rules.hunterAlwaysShoots })}
+          />
+        </div>
+      )}
+    </section>
     {!actorReady && <p className="form-error">Elige las 3 cartas del Comediante.</p>}
     <div className="sticky-action"><span>{deck.length === cardTarget ? (counts.thief ? 'El mazo está listo. Reparte una carta a cada persona y deja 2 boca abajo en el centro.' : 'El mazo está listo. Baraja y reparte las cartas.') : `${Math.abs(cardTarget - deck.length)} cartas ${deck.length < cardTarget ? 'por añadir' : 'de más'}`}</span><button className="button button-primary" disabled={!valid} onClick={onNext}>{deck.includes('angel') ? 'Empezar el día del Ángel' : 'Empezar primera noche'} <ArrowRight size={18} /></button></div>
   </section></main>
+}
+
+function DebateTimer() {
+  const [secondsLeft, setSecondsLeft] = useState(180)
+  const [running, setRunning] = useState(false)
+  const [finished, setFinished] = useState(false)
+
+  useEffect(() => {
+    if (!running) return
+    const interval = window.setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          setRunning(false)
+          setFinished(true)
+          playTimerChime()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => window.clearInterval(interval)
+  }, [running])
+
+  const setPreset = (secs: number) => {
+    setRunning(false)
+    setFinished(false)
+    setSecondsLeft(secs)
+  }
+
+  const addMinute = () => {
+    setFinished(false)
+    setSecondsLeft((prev) => prev + 60)
+  }
+
+  const mins = Math.floor(secondsLeft / 60).toString().padStart(2, '0')
+  const secs = (secondsLeft % 60).toString().padStart(2, '0')
+
+  return (
+    <div className={`debate-timer ${running ? 'running' : ''} ${finished ? 'finished' : ''}`} role="region" aria-label="Temporizador de debate">
+      <div className="timer-display">
+        <span className="timer-icon" aria-hidden="true">{finished ? <Bell size={18} /> : <Timer size={18} />}</span>
+        <div>
+          <strong className="timer-clock">{mins}:{secs}</strong>
+          <small>{finished ? '¡Tiempo agotado! A votar' : running ? 'Debate en curso' : 'Reloj de la aldea'}</small>
+        </div>
+      </div>
+      <div className="timer-controls">
+        <button type="button" className="timer-chip" onClick={() => setPreset(180)}>3m</button>
+        <button type="button" className="timer-chip" onClick={() => setPreset(300)}>5m</button>
+        <button type="button" className="timer-chip" onClick={addMinute}>+1m</button>
+        <button
+          type="button"
+          className="timer-play-btn"
+          onClick={() => {
+            if (secondsLeft === 0) setSecondsLeft(180)
+            setFinished(false)
+            setRunning(!running)
+          }}
+          aria-label={running ? 'Pausar temporizador' : 'Iniciar temporizador'}
+        >
+          {running ? <Pause size={16} /> : <Play size={16} fill="currentColor" />}
+          <span>{running ? 'Pausar' : 'Iniciar'}</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function SpokenPrompt({ text }: { text?: string }) {
+  if (!text) return null
+  return (
+    <div className="spoken-script-card" aria-label="Qué decir en voz alta">
+      <Volume2 size={16} aria-hidden="true" />
+      <div>
+        <small>Di en voz alta a la mesa</small>
+        <p>{text}</p>
+      </div>
+    </div>
+  )
 }
 
 function GameScreen({ game, setGame, canUndo, onUndo, onExit, onEnd }: { game: GameState; setGame: (game: GameState) => void; canUndo: boolean; onUndo: () => void; onExit: () => void; onEnd: () => void }) {
@@ -245,6 +473,7 @@ function GameScreen({ game, setGame, canUndo, onUndo, onExit, onEnd }: { game: G
   const revealedDeadOwners = currentRoleId && !actingAsActor ? game.players.filter((player) => !player.alive && player.roleId === currentRoleId) : []
   const discoveryComplete = !isDiscoveryCall || assignedOwners.length + revealedDeadOwners.length === expectedOwnerCount || thiefPending
   const targets = currentRoleId ? game.night.targets[currentRoleId] ?? [] : []
+  const sheriffTiebreakOnly = game.rules?.sheriffTiebreakOnly ?? true
 
   const updateNight = (patch: Partial<GameState['night']>) => setGame({ ...game, night: { ...game.night, ...patch } })
   const updateTargets = (roleId: RoleId, nextTargets: string[]) => updateNight({ targets: { ...game.night.targets, [roleId]: nextTargets } })
@@ -312,18 +541,24 @@ function GameScreen({ game, setGame, canUndo, onUndo, onExit, onEnd }: { game: G
 
   const phase = useMemo(() => {
     if (game.phase === 'night-intro') return game.openingDay
-      ? { icon: <RoleArtwork roleId="angel" className="phase-role-art" />, kicker: 'Antes de empezar', title: 'Busca al Ángel', text: 'Pide al Ángel que abra los ojos y anota quién es antes de que empiece el debate.' }
-      : { icon: <Moon size={30} />, kicker: `Noche ${game.round}`, title: 'Todos a dormir', text: game.round === 1 ? 'Vamos a colocar los personajes y resolver sus decisiones iniciales.' : 'Llamaré solo a quienes tengan algo que hacer esta noche.' }
-    if (game.phase === 'night-result') return { icon: <Sun size={30} />, kicker: `Día ${game.round}`, title: 'Amanece en la aldea', text: game.lastDeaths.length ? `${game.lastDeaths.length === 1 ? 'Una persona ha muerto' : `${game.lastDeaths.length} personas han muerto`} esta noche. Revisa el resumen antes de abrir la votación.` : game.elderSurvivedAttack ? 'No hay víctimas. El Anciano ha resistido el ataque de los lobos.' : 'La noche ha pasado tranquila. Todo el mundo sigue con vida.' }
+      ? { icon: <RoleArtwork roleId="angel" className="phase-role-art" />, kicker: 'Antes de empezar', title: 'Busca al Ángel', text: 'Pide al Ángel que abra los ojos y anota quién es antes de que empiece el debate.', spoken: '«Cerrad todos los ojos un instante… Que abra los ojos únicamente el Ángel.»' }
+      : { icon: <Moon size={30} />, kicker: `Noche ${game.round}`, title: 'Todos a dormir', text: game.round === 1 ? 'Vamos a colocar los personajes y resolver sus decisiones iniciales.' : 'Llamaré solo a quienes tengan algo que hacer esta noche.', spoken: '«Cae la noche sobre el pueblo. Todo el mundo cierra los ojos y duerme…»' }
+    if (game.phase === 'night-result') return { icon: <Sun size={30} />, kicker: `Día ${game.round}`, title: 'Amanece en la aldea', text: game.lastDeaths.length ? `${game.lastDeaths.length === 1 ? 'Una persona ha muerto' : `${game.lastDeaths.length} personas han muerto`} esta noche. Revisa el resumen antes de abrir la votación.` : game.elderSurvivedAttack ? 'No hay víctimas. El Anciano ha resistido el ataque de los lobos.' : 'La noche ha pasado tranquila. Todo el mundo sigue con vida.', spoken: '«Amanece en el pueblo. Todo el mundo puede abrir los ojos…»' }
     if (game.phase === 'day-discussion') return { icon: <Users size={30} />, kicker: game.openingDay ? 'Día previo · Ángel' : `Día ${game.round}`, title: game.openingDay ? 'La partida empieza de día' : 'Empieza el debate', text: game.openingDay ? 'El Ángel hace que la partida empiece con un debate y una votación.' : 'Cuenta lo que ha pasado y deja que la aldea hable.' }
-    if (game.phase === 'day-vote') return { icon: <Vote size={30} />, kicker: `Día ${game.round} · Votación`, title: game.judgeSecondVoteActive ? 'Segunda votación' : 'La aldea vota', text: 'Elige a quién expulsa la aldea. Las reglas especiales se aplicarán al confirmar.' }
-    if (game.phase === 'sheriff-action') return { icon: <Star size={30} />, kicker: 'Último aliento del Alguacil', title: 'El Alguacil nombra sucesor', text: 'Antes de abandonar la partida, el Alguacil elige quién hereda su cargo y su voto doble.' }
+    if (game.phase === 'day-vote') return { icon: <Vote size={30} />, kicker: `Día ${game.round} · Votación`, title: game.judgeSecondVoteActive ? 'Segunda votación' : 'La aldea vota', text: 'Elige a quién expulsa la aldea. Las reglas especiales se aplicarán al confirmar.', spoken: '«A la cuenta de tres, señalad con el dedo a la persona que queréis expulsar: uno, dos y tres…»' }
+    if (game.phase === 'sheriff-action') return { icon: <Star size={30} />, kicker: 'Último aliento del Alguacil', title: 'El Alguacil nombra sucesor', text: sheriffTiebreakOnly ? 'Antes de abandonar la partida, el Alguacil elige quién hereda su cargo y su voto de desempate.' : 'Antes de abandonar la partida, el Alguacil elige quién hereda su cargo y su voto doble.' }
     if (game.phase === 'hunter-action') return { icon: <RoleArtwork roleId="hunter" className="phase-role-art" />, kicker: 'Última acción del Cazador', title: 'El Cazador dispara', text: 'Antes de abandonar la partida, el Cazador debe señalar a una persona.' }
     if (game.phase === 'servant-action') return { icon: <RoleArtwork roleId="devoted_servant" className="phase-role-art" />, kicker: 'Antes de revelar la carta', title: 'La Sirvienta decide', text: `${selectedName(game.pendingVoteTargetId)} ha sido elegido. Puede quedarse con su carta antes de que la reveles.` }
     if (game.phase === 'scapegoat-action') return { icon: <RoleArtwork roleId="scapegoat" className="phase-role-art" />, kicker: 'Empate en la votación', title: 'El Cabeza de Turco elige', text: 'Antes de salir, decide quién podrá votar en la próxima ronda.' }
     if (game.phase === 'game-over') return winnerCopy(game.winner)
-    return { icon: <RoleArtwork roleId={currentRoleId} className="phase-role-art" />, kicker: `Noche ${game.round} · Llamada ${game.sequenceIndex + 1} de ${game.nightSequence.length}`, title: actingAsActor ? `El Comediante actúa como ${currentRole?.name}` : `Se despierta ${currentRole?.name}`, text: actingAsActor ? `Despierta al Comediante en lugar de ${currentRole?.name}. ${currentRole?.narratorPrompt ?? ''} Retira después la carta del centro.` : currentRole?.narratorPrompt ?? '' }
-  }, [game, currentRoleId, actingAsActor])
+    return {
+      icon: <RoleArtwork roleId={currentRoleId} className="phase-role-art" />,
+      kicker: `Noche ${game.round} · Llamada ${game.sequenceIndex + 1} de ${game.nightSequence.length}`,
+      title: actingAsActor ? `El Comediante actúa como ${currentRole?.name}` : `Se despierta ${currentRole?.name}`,
+      text: actingAsActor ? `Despierta al Comediante en lugar de ${currentRole?.name}. ${currentRole?.narratorPrompt ?? ''} Retira después la carta del centro.` : currentRole?.narratorPrompt ?? '',
+      spoken: currentRole?.spokenPrompt,
+    }
+  }, [game, currentRoleId, actingAsActor, sheriffTiebreakOnly])
 
   const chorusTargets = [
     ...targets,
@@ -337,6 +572,7 @@ function GameScreen({ game, setGame, canUndo, onUndo, onExit, onEnd }: { game: G
   ]
 
   const roleAction = game.phase === 'role-call' && currentRole ? <>
+    <SpokenPrompt text={phase.spoken} />
     {isDiscoveryCall && <div className="discovery-box"><div><Eye size={17} /><strong>Ubica el personaje</strong><small>Marca {expectedOwnerCount === 1 ? 'a quien ha abierto los ojos' : `a las ${expectedOwnerCount} personas que han abierto los ojos`}.</small></div><PlayerPicker players={alive.filter((player) => !player.roleId || player.roleId === currentRoleId)} selected={assignedOwners.map((player) => player.id)} onSelect={toggleOwner} compact /></div>}
     {discoveryComplete && <div className="who-wakes"><Moon size={16} /> {roleOwners.map((player) => player.name).join(' y ') || (currentRoleId === 'werewolf' ? 'Manada identificada' : 'Acción del narrador')}</div>}
     {discoveryComplete && <RoleAction game={game} setGame={setGame} roleId={currentRoleId!} owners={roleOwners} eligibleTargets={eligibleTargets} targets={targets} updateNight={updateNight} updateTargets={updateTargets} toggleTarget={toggleTarget} skipRole={skipRole} selectedName={selectedName} />}
@@ -346,15 +582,15 @@ function GameScreen({ game, setGame, canUndo, onUndo, onExit, onEnd }: { game: G
   return <SeatContext.Provider value={seatNumbers}><main className={`game-shell ${isDay ? 'day' : ''}`}><header className="game-header"><button className="icon-button" onClick={onExit} aria-label="Volver al inicio"><ArrowLeft size={20} /></button><div><span className="round-dot" /> {isDay ? 'Día' : 'Noche'} {game.round}</div><div className="header-actions"><button className="icon-button" onClick={onUndo} disabled={!canUndo} aria-label="Deshacer" title="Deshacer el último paso"><Undo2 size={19} /></button><button className="roles-button" onClick={() => setShowRoles(!showRoles)} aria-expanded={showRoles}><Eye size={17} /> {showRoles ? 'Ocultar' : 'Ver roles'}</button></div></header>
     {showRoles && <RoleDrawer game={game} onClose={closeRoles} />}
     <section className="game-content"><div className="turn-heading"><div className="phase-icon">{phase.icon}</div><div><span className="phase-progress">{phase.kicker}</span><h2>{phase.title}</h2><p className="phase-copy">{phase.text}</p></div></div>
+      {game.phase !== 'role-call' && phase.spoken && <SpokenPrompt text={phase.spoken} />}
       {game.phase === 'role-call' && <>
         <button className="chorus-toggle" onClick={() => setShowChorus(!showChorus)}><Map size={17} /> {showChorus ? 'Ocultar coro' : 'Mostrar coro'}</button>
         <div className="night-workspace"><div className="night-interaction">{roleAction}</div><aside className={`night-map-panel ${showChorus ? 'show' : ''}`}><SeatingCircle players={game.players} sheriffId={game.sheriffId} awakeIds={roleOwners.map((player) => player.id)} targetIds={chorusTargets} wolfVictimId={currentRoleId === 'witch' ? game.night.wolfTargetId : undefined} protectedId={game.night.protectedTargetId} round={game.round} /></aside></div>
       </>}
       {game.phase === 'night-intro' && <><div className="intro-map"><SeatingCircle players={game.players} sheriffId={game.sheriffId} awakeIds={[]} targetIds={[]} round={game.round} /></div><div className="game-action"><button className="button button-light button-large" onClick={() => setGame(game.nightSequence.length ? { ...game, phase: 'role-call', sequenceIndex: 0 } : { ...game, phase: 'night-result' })}>{game.openingDay ? 'Ubicar al Ángel' : 'Empezar las llamadas'} <ArrowRight size={19} /></button></div></>}
       {game.phase === 'night-result' && <><DaySummary game={game} />{!game.pendingHunters.length && <SheriffElection game={game} setGame={setGame} />}<div className="game-action morning-actions">{game.pendingHunters.length > 0 ? <button className="button button-dark button-large" onClick={() => setGame({ ...game, phase: 'hunter-action' })}><Crosshair size={19} /> El Cazador dispara</button> : game.sheriffSuccessionPending ? <button className="button button-dark button-large" onClick={() => setGame({ ...game, phase: 'sheriff-action' })}><Star size={19} /> El Alguacil nombra sucesor</button> : <><button className="button button-dark button-large" onClick={() => setGame({ ...game, phase: 'day-vote', pendingVoteTargetId: undefined })}>Abrir votación <Vote size={19} /></button><button className="button button-outline" onClick={() => setGame({ ...game, phase: 'day-discussion' })}>Empezar debate</button></>}</div></>}
-      {game.phase === 'day-discussion' && <SheriffElection game={game} setGame={setGame} />}
-      {game.phase === 'day-discussion' && <div className="game-action"><button className="button button-dark button-large" onClick={() => setGame({ ...game, phase: 'day-vote', pendingVoteTargetId: undefined })}>Abrir votación <Vote size={19} /></button></div>}
-      {game.phase === 'day-vote' && <VoteScreen game={game} setGame={setGame} />}
+      {game.phase === 'day-discussion' && <><DebateTimer /><SheriffElection game={game} setGame={setGame} /><div className="game-action"><button className="button button-dark button-large" onClick={() => setGame({ ...game, phase: 'day-vote', pendingVoteTargetId: undefined })}>Abrir votación <Vote size={19} /></button></div></>}
+      {game.phase === 'day-vote' && <><DebateTimer /><VoteScreen game={game} setGame={setGame} /></>}
       {game.phase === 'hunter-action' && <HunterShot game={game} setGame={setGame} />}
       {game.phase === 'sheriff-action' && <PlayerPicker players={alive} selected={[]} onSelect={(id) => setGame(resolveSheriffSuccession(game, id))} label="Nuevo Alguacil" />}
       {game.phase === 'servant-action' && <div className="decision-cards"><button onClick={() => setGame(resolveServantChoice(game, true))}><span className="icon-badge"><HeartHandshake size={24} /></span><strong>Adoptar el personaje</strong><small>La Sirvienta conserva la vida con la carta de {selectedName(game.pendingVoteTargetId)}.</small></button><button onClick={() => setGame(resolveServantChoice(game, false))}><span className="icon-badge"><Moon size={24} /></span><strong>No intervenir</strong><small>La persona elegida será eliminada normalmente.</small></button></div>}
@@ -449,7 +685,9 @@ function CardReveal({ game, playerId, value, onChange }: { game: GameState; play
 function SheriffElection({ game, setGame }: { game: GameState; setGame: (game: GameState) => void }) {
   if (!canElectSheriff(game)) return null
   const firstElection = !game.players.some((player) => !player.alive)
-  return <div className="discovery-box"><div><Star size={17} aria-hidden="true" /><strong>Elige al Alguacil</strong><small>{firstElection ? 'La aldea vota a su Alguacil. Su voto contará doble.' : 'La aldea no tiene Alguacil. Votad a uno nuevo; su voto contará doble.'}</small></div><PlayerPicker players={alivePlayers(game)} selected={[]} onSelect={(id) => setGame(electSheriff(game, id))} compact /></div>
+  const tiebreakOnly = game.rules?.sheriffTiebreakOnly ?? true
+  const ruleCopy = tiebreakOnly ? 'Su voto decidirá en caso de empate.' : 'Su voto contará doble.'
+  return <div className="discovery-box"><div><Star size={17} aria-hidden="true" /><strong>Elige al Alguacil</strong><small>{firstElection ? `La aldea vota a su Alguacil. ${ruleCopy}` : `La aldea no tiene Alguacil. Votad a uno nuevo; ${ruleCopy.toLocaleLowerCase()}`}</small></div><PlayerPicker players={alivePlayers(game)} selected={[]} onSelect={(id) => setGame(electSheriff(game, id))} compact /></div>
 }
 
 function HunterShot({ game, setGame }: { game: GameState; setGame: (game: GameState) => void }) {
@@ -473,11 +711,15 @@ function VoteScreen({ game, setGame }: { game: GameState; setGame: (game: GameSt
   const scapegoatAlive = !game.villagePowersDisabled && alive.some((player) => player.roleId === 'scapegoat')
   const sheriffName = game.players.find((player) => player.id === game.sheriffId && player.alive)?.name
   const foolName = game.foolRevealed ? alive.find((player) => player.roleId === 'village_fool')?.name : undefined
+  const tiebreakOnly = game.rules?.sheriffTiebreakOnly ?? true
   return <>
     {game.scapegoatVoters.length > 0 && <RuleCard title="Derecho a voto limitado"><p>Por decisión del Cabeza de Turco, solo votan: {game.scapegoatVoters.map((id) => game.players.find((player) => player.id === id)?.name).filter(Boolean).join(', ')}.</p></RuleCard>}
     {ravenName && <RuleCard title={`El Cuervo acusa a ${ravenName}`}><p>Empieza la votación con dos votos en contra.</p></RuleCard>}
     <SheriffElection game={game} setGame={setGame} />
-    {sheriffName && <RuleCard title={`El voto de ${sheriffName} cuenta doble`}><p>Es el Alguacil de la aldea.</p></RuleCard>}
+    {sheriffName && (tiebreakOnly
+      ? <RuleCard title={`${sheriffName} desempata como Alguacil`}><p>Su voto vale normal, pero decide quién sale en caso de empate{scapegoatAlive ? ' si no interviene el Cabeza de Turco' : ''}.</p></RuleCard>
+      : <RuleCard title={`El voto de ${sheriffName} cuenta doble`}><p>Es el Alguacil de la aldea.</p></RuleCard>
+    )}
     {foolName && <RuleCard title={`${foolName} no vota`}><p>El Tonto de la Aldea ya fue indultado y perdió su derecho a voto.</p></RuleCard>}
     <PlayerPicker players={alive} selected={game.pendingVoteTargetId ? [game.pendingVoteTargetId] : []} onSelect={(id) => { setCard(''); setGame({ ...game, pendingVoteTargetId: id }) }} label="Persona elegida por la aldea" />
     <CardReveal game={game} playerId={game.pendingVoteTargetId} value={card} onChange={setCard} />
@@ -565,7 +807,7 @@ function OptionalTarget({ title, players, selected, disabled, onSelect }: { titl
 }
 
 function ToggleCard({ active, disabled, icon, title, text, onClick }: { active: boolean; disabled?: boolean; icon: React.ReactNode; title: string; text: string; onClick: () => void }) {
-  return <button disabled={disabled} className={`toggle-card ${active ? 'selected' : ''}`} onClick={onClick}><span className="icon-badge" aria-hidden="true">{icon}</span><div><strong>{title}</strong><small>{text}</small></div>{active && <Check size={19} />}</button>
+  return <button type="button" disabled={disabled} className={`toggle-card ${active ? 'selected' : ''}`} onClick={onClick}><span className="icon-badge" aria-hidden="true">{icon}</span><div><strong>{title}</strong><small>{text}</small></div>{active && <Check size={19} />}</button>
 }
 
 function RuleCard({ title, children }: { title: string; children: React.ReactNode }) {
@@ -619,7 +861,7 @@ function winnerCopy(winner?: Winner) {
     nobody: { icon: <Skull size={34} />, title: 'Nadie sobrevive', text: 'No queda nadie con vida en la aldea: ningún bando gana.' },
   }
   const copy = copies[winner ?? 'village']
-  return { icon: copy.icon, kicker: 'Fin de la partida', title: copy.title, text: copy.text }
+  return { icon: copy.icon, kicker: 'Fin de la partida', title: copy.title, text: copy.text, spoken: undefined }
 }
 
 function countRoles(roles: RoleId[]): Partial<Record<RoleId, number>> {

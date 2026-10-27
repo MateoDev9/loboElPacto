@@ -1,6 +1,6 @@
-# Lobo — asistente del narrador
+# Wolves: El pueblo duerme — Asistente del narrador
 
-MVP web responsive para dirigir partidas de **Los Hombres Lobo de Castronegro: El Pacto**. Permite mantener una biblioteca de personas, preparar un mazo recomendado pero editable, identificar el reparto conforme los personajes despiertan durante la primera noche y seguir las fases de noche y día.
+Aplicación web responsive para dirigir partidas de roles ocultos en mesa (**Wolves: El pueblo duerme**). Permite mantener una biblioteca de jugadores habituales, preparar un mazo recomendado pero editable, elegir entre reglas de la casa o reglamento estándar, identificar el reparto conforme los personajes despiertan durante la primera noche y seguir las fases de noche y día con guion hablado y temporizador integrado.
 
 ## Puesta en marcha
 
@@ -26,14 +26,13 @@ npm run preview
 
 ## Estructura
 
-- `src/roles.ts`: catálogo de los personajes de El Pacto, combinaciones recomendadas y orden de llamada.
+- `src/roles.ts`: catálogo de los 31 personajes, combinaciones recomendadas, variantes de reglas y orden de llamada.
 - `src/game.ts`: reglas, transiciones y condiciones de victoria.
-- `src/game.test.ts`: pruebas de las reglas de cada personaje.
-- `src/storage.ts`: persistencia local de la partida activa.
-- `src/App.tsx`: pantallas y flujo principal.
-- `src/styles.css`: sistema visual responsive.
+- `src/game.test.ts`: pruebas automáticas de las reglas de cada personaje y variantes.
+- `src/storage.ts`: persistencia local de la partida activa, pila de deshacer, biblioteca y preferencias.
+- `src/App.tsx`: pantallas, temporizador de debate, bloqueo de pantalla y flujo principal.
+- `src/styles.css`: sistema visual responsive («Grimorio y Mesa de Juego»).
 - `public/sw.js` y `public/manifest.webmanifest`: permiten instalar la app y usarla sin conexión.
-- `docs/cartas.md`: notas sobre las imágenes de las cartas.
-- `reglas/`: reglamentos en PDF para consultar al desarrollar. No se suben a git ni se publican.
+- `docs/cartas.md`: notas sobre las ilustraciones propias en estilo grabado tarot.
 
-La partida activa se guarda automáticamente en `localStorage`, por lo que puede continuarse tras recargar o cerrar la pestaña. La versión publicada registra un service worker que guarda la app en el dispositivo: tras la primera visita funciona sin conexión.
+La partida activa y su historial de deshacer se guardan automáticamente en `localStorage`, por lo que puede continuarse tras recargar o cerrar la pestaña. La versión publicada registra un service worker que guarda la app en el dispositivo: tras la primera visita funciona sin conexión.

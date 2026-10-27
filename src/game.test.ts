@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  advanceRoleCall, applyActorChoice, applyThiefChoice, assignRoleOwners, canElectSheriff, createGame, determineWinner, eliminateByVote,
-  electSheriff, prepareNextNight, resolveHunterShot, resolveNight, resolveServantChoice, resolveSheriffSuccession, revealCard, unrevealedCards,
+  advanceRoleCall, applyActorChoice, applyThiefChoice, assignRoleOwners, beginScapegoatTie, canElectSheriff, createGame, determineWinner, eliminateByVote,
+  electSheriff, prepareNextNight, resolveHunterShot, resolveNight, resolveScapegoat, resolveServantChoice, resolveSheriffSuccession, revealCard, unrevealedCards,
 } from './game'
+import { HOUSE_RULES, OFFICIAL_RULES } from './roles'
 import type { GameState, RoleId } from './types'
 
 // Partida con las cartas ya ubicadas: el jugador i tiene roles[i]
@@ -229,5 +230,41 @@ describe('Alguacil', () => {
     const night = resolveNight(withNight({ ...game, lovers: [id(game, 1), id(game, 2)] }, { wolfTargetId: id(game, 1) }))
     expect(night.players[2].alive).toBe(false)
     expect(night.sheriffSuccessionPending).toBe(true)
+  })
+})
+
+describe('variantes de reglamento (casa vs estándar)', () => {
+  it('en reglas de la casa Vidente y Zorro van al final de la Noche 1; en estándar van antes de los lobos', () => {
+    const deck: RoleId[] = ['werewolf', 'infect_father', 'seer', 'fox', 'villager']
+    const houseGame = createGame(['A', 'B', 'C', 'D', 'E'], deck, [], { rules: HOUSE_RULES })
+    const officialGame = createGame(['A', 'B', 'C', 'D', 'E'], deck, [], { rules: OFFICIAL_RULES })
+    expect(houseGame.nightSequence.indexOf('seer')).toBeGreaterThan(houseGame.nightSequence.indexOf('infect_father'))
+    expect(officialGame.nightSequence.indexOf('seer')).toBeLessThan(officialGame.nightSequence.indexOf('werewolf'))
+    expect(officialGame.nightSequence.indexOf('fox')).toBeLessThan(officialGame.nightSequence.indexOf('werewolf'))
+  })
+
+  it('las Dos Hermanas despiertan en Noche 2 con reglas de la casa, pero no con reglamento estándar', () => {
+    const base = dealt(['werewolf', 'two_sisters', 'two_sisters', 'villager', 'villager'])
+    const houseNext = prepareNextNight({ ...base, rules: HOUSE_RULES, phase: 'day-vote' })
+    const officialNext = prepareNextNight({ ...base, rules: OFFICIAL_RULES, phase: 'day-vote' })
+    expect(houseNext.nightSequence).toContain('two_sisters')
+    expect(officialNext.nightSequence).not.toContain('two_sisters')
+  })
+
+  it('el Cazador dispara al morir de pena en reglas de la casa, pero no en reglamento estándar', () => {
+    const base = dealt(['werewolf', 'villager', 'hunter', 'villager', 'villager'])
+    const lovers = [id(base, 1), id(base, 2)]
+    const houseResult = resolveNight(withNight({ ...base, rules: HOUSE_RULES, lovers }, { wolfTargetId: id(base, 1) }))
+    const officialResult = resolveNight(withNight({ ...base, rules: OFFICIAL_RULES, lovers }, { wolfTargetId: id(base, 1) }))
+    expect(houseResult.pendingHunters).toContain(id(base, 2))
+    expect(officialResult.pendingHunters).toHaveLength(0)
+  })
+
+  it('el Cazador que también es Cabeza de Turco o muere por su empate no dispara en reglamento estándar', () => {
+    const base = dealt(['werewolf', 'scapegoat', 'hunter', 'villager', 'villager'])
+    const lovers = [id(base, 1), id(base, 2)]
+    const tieState = beginScapegoatTie({ ...base, rules: OFFICIAL_RULES, lovers, phase: 'day-vote' })
+    const result = resolveScapegoat(tieState, [id(base, 0), id(base, 3)])
+    expect(result.pendingHunters).toHaveLength(0)
   })
 })
