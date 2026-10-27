@@ -182,6 +182,9 @@ export function prepareNextNight(game: GameState): GameState {
     judgeSecondVoteRequested: false,
     judgeSecondVoteActive: false,
     noblePardonRequested: false,
+    innkeeperVoteTargetId: undefined,
+    innkeeperLostImmunity: false,
+    barberResult: undefined,
     headmistressMutedIds: [],
     pendingVoteTargetId: undefined,
     pendingHunters: [],
@@ -214,15 +217,20 @@ function finishDeaths(game: GameState): GameState {
   if (winner) return { ...game, winner, phase: 'game-over', postDeathAction: undefined }
   // Con edificios, si mueren todos los Granjeros ya no hay Alguacil
   let current = game
-  if (current.sheriffSuccessionPending && current.buildingsEnabled && eligibleSheriffCandidates(current).length === 0) {
-    current = { ...current, sheriffSuccessionPending: false, sheriffLost: true }
+  if (current.buildingsEnabled && eligibleSheriffCandidates(current).length === 0) {
+    if (current.sheriffSuccessionPending || current.sheriffId) {
+      current = { ...current, sheriffId: undefined, sheriffSuccessionPending: false, sheriffLost: true }
+    }
   }
   // El Alguacil que muere nombra sucesor antes de seguir; de noche se hace desde el amanecer
   if (current.sheriffSuccessionPending) {
     return current.postDeathAction === 'night-result' ? { ...current, phase: 'night-result', postDeathAction: undefined } : { ...current, phase: 'sheriff-action' }
   }
   if (current.postDeathAction === 'night-result') return { ...current, phase: 'night-result', postDeathAction: undefined }
-  if (current.postDeathAction === 'stay-day') return { ...current, postDeathAction: undefined }
+  if (current.postDeathAction === 'stay-day') {
+    const stayPhase = ['night-result', 'day-discussion', 'day-vote'].includes(current.phase) ? current.phase : 'day-discussion'
+    return { ...current, phase: stayPhase, postDeathAction: undefined }
+  }
   if (current.postDeathAction === 'second-vote') return { ...current, phase: 'day-vote', postDeathAction: undefined, pendingVoteTargetId: undefined, judgeSecondVoteRequested: false, judgeSecondVoteActive: true }
   return prepareNextNight({ ...current, postDeathAction: undefined })
 }
@@ -247,7 +255,8 @@ function applyDeaths(game: GameState, deaths: Array<{ playerId?: string; cause: 
     }
 
     const wasWolf = isWolfAlignedPlayer(next, player)
-    const freedBuilding = next.buildingsEnabled && player.buildingId && player.buildingId !== 'vagrant'
+    const mayorDied = next.buildingsEnabled && player.buildingId === 'mayor'
+    const freedBuilding = next.buildingsEnabled && player.buildingId && player.buildingId !== 'vagrant' && player.buildingId !== 'mayor'
       ? player.buildingId
       : undefined
     next = {
@@ -256,7 +265,7 @@ function applyDeaths(game: GameState, deaths: Array<{ playerId?: string; cause: 
       lastDeaths: next.lastDeaths.includes(player.id) ? next.lastDeaths : [...next.lastDeaths, player.id],
       wolfDeathsOccurred: next.wolfDeathsOccurred || wasWolf || player.roleId === 'wild_child' || player.roleId === 'wolf_hound',
       villagePowersDisabled: next.villagePowersDisabled || (player.roleId === 'elder' && !wolfAttack),
-      ...(freedBuilding ? { vacantBuildings: [...(next.vacantBuildings ?? []), freedBuilding] } : {}),
+      ...(mayorDied ? { vacantBuildings: [] } : freedBuilding ? { vacantBuildings: [...(next.vacantBuildings ?? []), freedBuilding] } : {}),
     }
 
     if (player.id === next.sheriffId) next = { ...next, sheriffId: undefined, sheriffSuccessionPending: true }
@@ -338,16 +347,25 @@ export function advanceRoleCall(game: GameState): GameState {
 function finishVote(game: GameState, playerId: string): GameState {
   const target = game.players.find((player) => player.id === playerId)
   const noblePlayer = game.buildingsEnabled ? game.players.find((player) => hasActiveBuilding(game, player, 'noble')) : undefined
+  const innkeeperPlayer = game.buildingsEnabled ? game.players.find((player) => hasActiveBuilding(game, player, 'innkeeper')) : undefined
   const noblePardons = Boolean(noblePlayer && game.noblePardonRequested && target && !isVagrant(game, target))
   const foolSurvives = !noblePardons && target?.roleId === 'village_fool' && !game.foolRevealed && !game.villagePowersDisabled
   const survivesVote = noblePardons || Boolean(foolSurvives)
+  // Si el Tabernero votó contra la persona elegida por la aldea (incluso si luego es indultada), pierde su ficha e inmunidad
+  const innkeeperVotedCondemned = Boolean(
+    innkeeperPlayer && (game.innkeeperVoteTargetId === playerId || game.innkeeperLostImmunity)
+  )
   const post: PostDeathAction = game.judgeSecondVoteRequested && !survivesVote ? 'second-vote' : 'next-night'
   const next: GameState = {
     ...game,
-    players: noblePardons && noblePlayer
-      ? game.players.map((player) => player.id === noblePlayer.id ? { ...player, buildingUsed: true } : player)
-      : game.players,
+    players: game.players.map((player) => {
+      if (noblePardons && noblePlayer && player.id === noblePlayer.id) return { ...player, buildingUsed: true }
+      if (innkeeperVotedCondemned && innkeeperPlayer && player.id === innkeeperPlayer.id) return { ...player, buildingUsed: true }
+      return player
+    }),
     pendingVoteTargetId: undefined,
+    innkeeperVoteTargetId: undefined,
+    innkeeperLostImmunity: false,
     lastDeaths: [],
     pendingHunters: [],
     foolRevealed: game.foolRevealed || Boolean(foolSurvives),
@@ -464,7 +482,26 @@ export function applyBarberCut(game: GameState, targetId: string): GameState {
   const deaths: Array<{ playerId?: string; cause: DeathCause }> = targetIsWolf
     ? [{ playerId: target.id, cause: 'barber' }]
     : [{ playerId: target.id, cause: 'barber' }, { playerId: barber.id, cause: 'barber' }]
-  return applyDeaths({ ...game, players: updatedPlayers, lastDeaths: [] }, deaths, 'stay-day')
+  return applyDeaths(
+    {
+      ...game,
+      players: updatedPlayers,
+      lastDeaths: [],
+      barberResult: { barberId: barber.id, targetId: target.id, targetWasWolf: targetIsWolf },
+    },
+    deaths,
+    'stay-day',
+  )
+}
+
+export function dismissVacantBuilding(game: GameState, buildingId: BuildingId): GameState {
+  const vacant = game.vacantBuildings ?? []
+  const index = vacant.indexOf(buildingId)
+  if (index < 0) return game
+  return {
+    ...game,
+    vacantBuildings: vacant.filter((_, i) => i !== index),
+  }
 }
 
 export function applyConfessorPower(game: GameState): GameState {

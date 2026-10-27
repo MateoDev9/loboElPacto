@@ -14,10 +14,14 @@ export interface BuildingDefinition {
   id: BuildingId
   name: string
   buildingName: string
-  icon: string
+  tokenName: string
+  powerKind: 'permanent' | 'unique' | 'none'
+  whenToUse: string
   maxCount: number
   uniquePower?: boolean
   description: string
+  rules: string[]
+  spokenPrompt?: string
 }
 
 export type RoleCategory = 'wolves' | 'village' | 'ambiguous' | 'solitary' | 'village-expansion'
@@ -97,7 +101,13 @@ export interface GameState {
   vacantBuildings?: BuildingId[]
   headmistressMutedIds?: string[]
   noblePardonRequested?: boolean
+  innkeeperVoteTargetId?: string
   innkeeperLostImmunity?: boolean
+  barberResult?: {
+    barberId: string
+    targetId: string
+    targetWasWolf: boolean
+  }
   roleChoices: Partial<Record<RoleId, string>>
   round: number
   openingDay: boolean

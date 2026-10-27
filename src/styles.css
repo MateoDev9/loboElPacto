@@ -2239,60 +2239,162 @@ h1 em {
 }
 
 /* Expansión: Los Edificios de La Aldea */
-.buildings-expansion-card {
+.building-artwork > svg {
   width: 100%;
-  margin: 18px 0 4px;
-  padding: 16px 18px;
-  display: grid;
-  grid-template-columns: 42px 1fr auto;
-  align-items: center;
-  gap: 14px;
-  text-align: left;
-  color: var(--text-main);
-  border: 1.5px solid var(--border);
-  border-radius: 14px;
-  background: var(--bg-card);
-  box-shadow: var(--card-shadow);
+  height: 100%;
+  display: block;
 }
-.buildings-expansion-card:hover {
-  border-color: var(--border-gold);
-  background: var(--bg-card-hover);
+.role-icon.tiny {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
 }
-.buildings-expansion-card.active {
-  border-color: var(--accent-gold);
-  background: var(--accent-gold-bg);
-}
-.buildings-expansion-card > div strong {
+.drawer-player-icons {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 15px;
+  gap: 6px;
 }
-.buildings-expansion-card > div small {
-  display: block;
-  margin-top: 3px;
+.drawer-building-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  border-radius: 7px;
+}
+.drawer-building-btn:hover {
+  transform: scale(1.06);
+}
+
+.buildings-catalog-preview {
+  margin-top: 14px;
+}
+.buildings-preview-head {
+  margin-bottom: 10px;
   color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 12.5px;
 }
-.buildings-toggle-pill {
-  padding: 6px 12px;
+.building-catalog-card {
+  cursor: pointer;
+  border-left-color: var(--accent-gold);
+}
+.building-sub-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 999px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--accent-gold);
+  vertical-align: middle;
+}
+.role-info-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.role-info-btn:hover {
+  color: var(--accent-gold);
+  border-color: var(--accent-gold);
+}
+
+/* Modal de ficha detallada de Edificio */
+.role-modal-backdrop {
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.role-modal {
+  position: relative;
+  width: min(500px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px 26px;
+  border-radius: 18px;
+  border: 1.5px solid var(--border-gold);
+  background: var(--bg-raised);
+  color: var(--text-main);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.65);
+  text-align: left;
+}
+.role-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+.role-modal-card-frame {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 16px;
+}
+.role-modal-art {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+}
+.role-team-pill {
+  display: inline-block;
+  padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
-  border: 1px solid var(--border-strong);
-  color: var(--text-muted);
-}
-.buildings-toggle-pill.on {
-  border-color: var(--accent-gold);
+  text-transform: uppercase;
+  background: var(--accent-gold-bg);
   color: var(--accent-gold);
-  background: rgb(212 167 89 / 0.14);
+  border: 1px solid var(--border-gold);
+}
+.role-modal-body h3 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  margin: 10px 0 8px;
+}
+.role-modal-description {
+  margin: 0 0 18px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.role-modal-meta {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.role-modal-meta small {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-gold);
+  margin-bottom: 4px;
+}
+.role-modal-meta p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.building-rules-list {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-main);
 }
 
+/* Fase inicial de reparto de Edificaciones */
 .buildings-setup {
-  max-width: 680px;
+  max-width: 720px;
   margin: 0 auto;
   text-align: left;
 }
@@ -2300,81 +2402,156 @@ h1 em {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 14px;
   color: var(--text-muted);
   font-size: 13px;
 }
+.buildings-toolbar-actions {
+  display: flex;
+  gap: 14px;
+}
 .buildings-setup-list {
   display: grid;
   gap: 10px;
 }
-.building-row {
+.building-row-card {
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-left: 4px solid var(--accent-gold);
+  border-radius: 14px;
+  background: var(--bg-card);
+  box-shadow: var(--card-shadow);
+}
+.building-row-card.expanded {
+  border-color: var(--border-gold);
+}
+.building-row-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 210px;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
-  padding: 12px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg-card);
 }
-.building-player {
+.building-row-main > .role-icon {
+  width: 52px;
+  height: 52px;
+}
+.building-player-title {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-.seat-pill {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
+.building-player-title strong {
+  font-size: 15.5px;
+}
+.building-badge-pill {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
   font-weight: 700;
-  background: var(--bg-raised);
-  border: 1px solid var(--border-strong);
+  background: var(--accent-gold-bg);
+  border: 1px solid var(--border-gold);
   color: var(--accent-gold);
-  flex-shrink: 0;
 }
-.building-player strong {
+.building-player-info > small {
   display: block;
-  font-size: 15px;
-}
-.building-player small {
-  display: block;
+  margin-top: 4px;
   color: var(--text-muted);
-  font-size: 11.5px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.4;
 }
-.building-select-wrap {
-  position: relative;
+.building-row-actions {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
-.building-select-wrap select {
-  width: 100%;
-  appearance: none;
-  padding: 9px 32px 9px 12px;
+.building-change-btn {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+}
+.building-picker-grid {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.building-option-card {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
   border-radius: 10px;
-  border: 1.5px solid var(--border-strong);
+  border: 1.5px solid var(--border);
   background: var(--bg-raised);
   color: var(--text-main);
-  font-size: 13px;
-  font-weight: 600;
+  text-align: left;
 }
-.building-select-wrap svg {
-  position: absolute;
-  right: 10px;
-  pointer-events: none;
+.building-option-card:hover {
+  border-color: var(--border-gold);
+}
+.building-option-card.selected {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-bg);
+}
+.building-option-card strong {
+  display: block;
+  font-size: 13px;
+}
+.building-option-card small {
+  display: block;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
-.building-day-panel {
+/* Bloques guiados de Edificaciones en Noche, Día y Votación */
+.building-callout-box {
+  max-width: 640px;
+  margin: 18px auto 8px;
+  padding: 16px 18px;
+  border: 1.5px solid var(--border-gold);
+  border-radius: 14px;
+  background: var(--bg-card);
+  text-align: left;
+}
+.building-callout-head {
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 10px;
+}
+.building-callout-head > .role-icon.small {
+  width: 42px;
+  height: 42px;
+  grid-row: auto !important;
+}
+.building-callout-head strong {
+  display: block;
+  font-size: 15px;
+  color: var(--text-main);
+}
+.building-callout-head small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.building-day-section {
   max-width: 640px;
   margin: 18px auto;
-  padding: 16px 18px;
+  display: grid;
+  gap: 14px;
+}
+.building-day-panel {
+  padding: 18px 20px;
   border: 1.5px solid var(--border-gold);
   border-radius: 14px;
   background: var(--bg-card);
@@ -2386,43 +2563,92 @@ h1 em {
   align-items: center;
   gap: 8px;
   color: var(--accent-gold);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 12px;
+  letter-spacing: 0.1em;
+  margin-bottom: 14px;
 }
-.building-day-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.building-day-cards {
+  display: grid;
+  gap: 10px;
 }
-.building-chip {
-  padding: 8px 13px;
-  border-radius: 999px;
-  border: 1.5px solid var(--border-strong);
+.building-action-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
   background: var(--bg-raised);
-  color: var(--text-main);
-  font-size: 13px;
-  font-weight: 600;
 }
-.building-chip.active {
-  border-color: var(--accent-gold);
-  background: var(--accent-gold-bg);
-  color: var(--accent-gold);
+.building-action-card.expanded {
+  border-color: var(--border-gold);
+}
+.building-action-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.building-action-row strong {
+  display: block;
+  font-size: 14.5px;
+}
+.building-action-row small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.38;
 }
 .building-tool-drawer {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--border);
 }
-.building-tool-drawer p {
-  margin: 0 0 12px;
-  font-size: 13px;
+.building-tool-actions {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.vacant-building-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.vacant-single-banner {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised);
+}
+.vacant-single-banner strong {
+  display: block;
+  font-size: 13.5px;
+}
+.vacant-single-banner small {
+  display: block;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
 @media (max-width: 640px) {
-  .building-row {
+  .building-row-main,
+  .building-action-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+  .building-row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  .building-picker-grid,
+  .vacant-building-tabs {
     grid-template-columns: 1fr;
   }
 }

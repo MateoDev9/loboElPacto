@@ -1,23 +1,24 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, Bell, BookUser, Building2, Check, ChevronDown, CircleMinus, CirclePlus, Crosshair,
-  Dog, Eye, Feather, Flame, FlaskConical, Heart, HeartHandshake, History, KeyRound, Lock, Map, Moon, Music,
-  Pause, PawPrint, Play, RotateCcw, Scale, Scissors, ShieldCheck, Skull, SlidersHorizontal, Sparkles, Star, Sun, Timer, Trash2,
+  Dog, Eye, Feather, Flame, FlaskConical, Heart, HeartHandshake, History, Info, KeyRound, Lock, Map, Moon, Music,
+  Pause, PawPrint, Play, RotateCcw, Scale, ShieldCheck, Skull, SlidersHorizontal, Sparkles, Star, Sun, Timer, Trash2,
   TreeDeciduous, Undo2, Users, Volume2, Vote, Wheat, X,
 } from 'lucide-react'
 import {
   activateWithFounderCode, isProRole, PRO_PRICE_LABEL, purchaseGrimorioPro, restoreGrimorioPurchase, verifyStoredEntitlement,
 } from './billing'
+import { BuildingArtwork, BuildingInfoModal } from './BuildingArtwork'
 import { BUILDING_LIST, BUILDINGS, recommendedBuildings } from './buildings'
 import {
   advanceRoleCall, alivePlayers, aliveWolves, applyActorChoice, applyApothecaryRestore, applyBarberCut, applyConfessorPower,
-  applyMayorAssign, applyThiefChoice, assignRoleOwners, bearGrowls, beginScapegoatTie, canElectSheriff, createGame, electSheriff,
+  applyMayorAssign, applyThiefChoice, assignRoleOwners, bearGrowls, beginScapegoatTie, canElectSheriff, createGame, dismissVacantBuilding, electSheriff,
   eligibleSheriffCandidates, eliminateByVote, foxTrio, hasActiveBuilding, isVagrant, isWolfAlignedPlayer,
   phaseAfterNoVote, resolveHunterShot, resolveScapegoat, resolveServantChoice, resolveSheriffSuccession, revealCard, unrevealedCards,
 } from './game'
 import { CATEGORY_LABELS, HOUSE_RULES, isActorCandidate, isWolfRole, OFFICIAL_RULES, recommendedRoles, ROLE_LIST, ROLES } from './roles'
 import { clearGame, loadGame, loadHistory, loadLastGroups, loadPeople, loadRules, saveGame, saveHistory, saveLastGroups, savePeople, saveRules } from './storage'
-import type { BuildingId, GameRules, GameState, Player, RoleCategory, RoleId, SetupStep, Winner } from './types'
+import type { BuildingDefinition, BuildingId, GameRules, GameState, Player, RoleCategory, RoleId, SetupStep, Winner } from './types'
 
 type Screen = 'home' | 'library' | 'setup' | 'game'
 
@@ -287,6 +288,7 @@ function DeckSetup({
   onNext: () => void
 }) {
   const [customizeRules, setCustomizeRules] = useState(false)
+  const [inspectBuilding, setInspectBuilding] = useState<BuildingDefinition | null>(null)
   const counts = countRoles(deck)
   const categories: RoleCategory[] = ['wolves', 'village', 'ambiguous', 'solitary', 'village-expansion']
   // Con el Ladrón se reparten 2 cartas de más, que quedan boca abajo en el centro
@@ -364,7 +366,7 @@ function DeckSetup({
       <ToggleCard
         active={useBuildings}
         icon={<Building2 size={22} />}
-        title={isPro ? 'Jugar con Edificaciones (Oficios públicos)' : 'Jugar con Edificaciones · PRO'}
+        title={isPro ? 'Jugar con Edificaciones (Los edificios de La Aldea)' : 'Jugar con Edificaciones · PRO'}
         text="Cada habitante recibe un edificio público (Granjero, Panadero, Tabernero, Barbero, Noble, Alcalde, Vagabundo…) con poderes adicionales."
         onClick={() => {
           if (!isPro) {
@@ -374,6 +376,36 @@ function DeckSetup({
           setUseBuildings(!useBuildings)
         }}
       />
+      {useBuildings && (
+        <div className="buildings-catalog-preview">
+          <div className="buildings-preview-head">
+            <small>10 perfiles de edificio incluidos. Toca cualquiera para consultar sus reglas detalladas.</small>
+          </div>
+          <div className="catalog-grid">
+            {BUILDING_LIST.map((b) => (
+              <article
+                className="catalog-card building-catalog-card"
+                key={b.id}
+                onClick={() => setInspectBuilding(b)}
+              >
+                <BuildingArtwork buildingId={b.id} className="role-icon" />
+                <div>
+                  <strong>{b.name} <span className="building-sub-tag">{b.buildingName}</span></strong>
+                  <small>{b.description}</small>
+                </div>
+                <button
+                  type="button"
+                  className="role-info-btn"
+                  onClick={(e) => { e.stopPropagation(); setInspectBuilding(b) }}
+                  aria-label={`Ver reglas de ${b.name}`}
+                >
+                  <Info size={16} />
+                </button>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
     <section className="role-category">
       <div className="rules-header-row">
@@ -425,8 +457,9 @@ function DeckSetup({
         </div>
       )}
     </section>
+    {inspectBuilding && <BuildingInfoModal building={inspectBuilding} onClose={() => setInspectBuilding(null)} />}
     {!actorReady && <p className="form-error">Elige las 3 cartas del Comediante.</p>}
-    <div className="sticky-action"><span>{deck.length === cardTarget ? (counts.thief ? 'El mazo está listo. Reparte una carta a cada persona y deja 2 boca abajo en el centro.' : 'El mazo está listo. Baraja y reparte las cartas.') : `${Math.abs(cardTarget - deck.length)} cartas ${deck.length < cardTarget ? 'por añadir' : 'de más'}`}</span><button className="button button-primary" disabled={!valid} onClick={onNext}>{deck.includes('angel') ? 'Empezar el día del Ángel' : 'Empezar primera noche'} <ArrowRight size={18} /></button></div>
+    <div className="sticky-action"><span>{deck.length === cardTarget ? (counts.thief ? 'El mazo está listo. Reparte una carta a cada persona y deja 2 boca abajo en el centro.' : 'El mazo está listo. Baraja y reparte las cartas.') : `${Math.abs(cardTarget - deck.length)} cartas ${deck.length < cardTarget ? 'por añadir' : 'de más'}`}</span><button className="button button-primary" disabled={!valid} onClick={onNext}>{useBuildings ? 'Repartir edificaciones' : deck.includes('angel') ? 'Empezar el día del Ángel' : 'Empezar primera noche'} <ArrowRight size={18} /></button></div>
   </section></main>
 }
 
@@ -766,12 +799,26 @@ function RoleAction({ game, setGame, roleId, eligibleTargets, targets, updateNig
   if (roleId === 'thief') return <ThiefActions game={game} setGame={setGame} />
   if (roleId === 'sectarian') return <SectarianGroups game={game} setGame={setGame} />
   if (roleId === 'actor') return <ActorActions game={game} setGame={setGame} />
-  if (roleId === 'werewolf') return <>
-    {(game.round === 1 || game.servantRestartRole === 'wolf_hound') && game.players.some((player) => player.roleId === 'wolf_hound' && player.alive) && <ToggleCard active={game.roleChoices.wolf_hound === 'wolves'} icon={<Dog size={22} />} title="El Perro Lobo abrió los ojos con la manada" text="Márcalo solo si lo has observado; no se le pregunta su elección." onClick={() => setGame({ ...game, roleChoices: { ...game.roleChoices, wolf_hound: game.roleChoices.wolf_hound === 'wolves' ? 'village' : 'wolves' } })} />}
-    <PlayerPicker players={eligibleTargets} selected={game.night.wolfTargetId ? [game.night.wolfTargetId] : []} onSelect={(id) => updateNight({ wolfTargetId: id })} label="Víctima de la manada" />
-    {!game.villagePowersDisabled && game.players.some((player) => player.roleId === 'little_girl' && player.alive) && <ToggleCard active={game.night.littleGirlCaught} icon={<Eye size={22} />} title="La Niña Pequeña ha sido sorprendida" text="Si la descubren espiando, morirá en lugar de la víctima elegida." onClick={() => updateNight({ littleGirlCaught: !game.night.littleGirlCaught })} />}
-    {game.buildingsEnabled && game.players.some((player) => player.alive && hasActiveBuilding(game, player, 'baker')) && <RuleCard title="🥖 El Panadero abre los ojos al cerrar los lobos"><p>Justo después de decir «Hombres Lobo, cerrad los ojos», pide al Panadero que abra los ojos un instante para ver si descubre algún movimiento tardío.</p></RuleCard>}
-  </>
+  if (roleId === 'werewolf') {
+    const bakerPlayer = game.buildingsEnabled ? game.players.find((player) => player.alive && hasActiveBuilding(game, player, 'baker')) : undefined
+    return <>
+      {(game.round === 1 || game.servantRestartRole === 'wolf_hound') && game.players.some((player) => player.roleId === 'wolf_hound' && player.alive) && <ToggleCard active={game.roleChoices.wolf_hound === 'wolves'} icon={<Dog size={22} />} title="El Perro Lobo abrió los ojos con la manada" text="Márcalo solo si lo has observado; no se le pregunta su elección." onClick={() => setGame({ ...game, roleChoices: { ...game.roleChoices, wolf_hound: game.roleChoices.wolf_hound === 'wolves' ? 'village' : 'wolves' } })} />}
+      <PlayerPicker players={eligibleTargets} selected={game.night.wolfTargetId ? [game.night.wolfTargetId] : []} onSelect={(id) => updateNight({ wolfTargetId: id })} label="Víctima de la manada" />
+      {!game.villagePowersDisabled && game.players.some((player) => player.roleId === 'little_girl' && player.alive) && <ToggleCard active={game.night.littleGirlCaught} icon={<Eye size={22} />} title="La Niña Pequeña ha sido sorprendida" text="Si la descubren espiando, morirá en lugar de la víctima elegida." onClick={() => updateNight({ littleGirlCaught: !game.night.littleGirlCaught })} />}
+      {bakerPlayer && (
+        <div className="building-callout-box">
+          <div className="building-callout-head">
+            <BuildingArtwork buildingId="baker" className="role-icon small" />
+            <div>
+              <strong>{bakerPlayer.name} · La Panadería (Panadero)</strong>
+              <small>Interviene cada noche inmediatamente después de que los Hombres Lobo cierren los ojos.</small>
+            </div>
+          </div>
+          <SpokenPrompt text={BUILDINGS.baker.spokenPrompt} />
+        </div>
+      )}
+    </>
+  }
   if (roleId === 'infect_father') return <ToggleCard active={game.night.infectVictim} disabled={!game.infectionAvailable || !game.night.wolfTargetId} icon={<Skull size={22} />} title="Infectar a la víctima" text={!game.infectionAvailable ? 'El poder ya se utilizó.' : !game.night.wolfTargetId ? 'La manada todavía no ha elegido víctima.' : game.players.find((player) => player.id === game.night.wolfTargetId)?.roleId === 'elder' && game.elderWolfHits === 0 ? `${selectedName(game.night.wolfTargetId)} es el Anciano: la primera mordedura no le infecta y resistirá el ataque. El poder se gastará.` : `${selectedName(game.night.wolfTargetId)} no morirá y se incorporará en secreto a la manada.`} onClick={() => updateNight({ infectVictim: !game.night.infectVictim })} />
   if (roleId === 'fierce_wolf') return game.wolfDeathsOccurred ? <RuleCard title="El segundo ataque se ha perdido"><p>Ya ha muerto un Hombre Lobo, el Niño Salvaje o el Perro Lobo.</p></RuleCard> : <PlayerPicker players={eligibleTargets} selected={game.night.fierceWolfTargetId ? [game.night.fierceWolfTargetId] : []} onSelect={(id) => updateNight({ fierceWolfTargetId: id })} label="Segunda víctima del Lobo Feroz" />
   if (roleId === 'albino_wolf' && game.round === 1) return <RuleCard title="Esta noche no actúa solo"><p>Participa con la manada. Su ataque contra otro lobo empieza en la segunda noche y se repite una noche de cada dos.</p></RuleCard>
@@ -844,12 +891,17 @@ function CardReveal({ game, playerId, value, onChange }: { game: GameState; play
 }
 
 function BuildingsSetupPhase({ game, setGame }: { game: GameState; setGame: (game: GameState) => void }) {
+  const [inspectBuilding, setInspectBuilding] = useState<BuildingDefinition | null>(null)
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null)
+
   const updateBuilding = (playerId: string, buildingId: BuildingId) => {
     setGame({
       ...game,
       players: game.players.map((player) => player.id === playerId ? { ...player, buildingId, buildingUsed: false } : player),
     })
+    setEditingPlayerId(null)
   }
+
   const shuffleBuildings = () => {
     const pool = [...recommendedBuildings(game.players.length)]
     for (let i = pool.length - 1; i > 0; i--) {
@@ -861,33 +913,89 @@ function BuildingsSetupPhase({ game, setGame }: { game: GameState; setGame: (gam
       players: game.players.map((player, idx) => ({ ...player, buildingId: pool[idx] ?? 'vagrant', buildingUsed: false })),
     })
   }
+
+  const resetRecommended = () => {
+    const rec = recommendedBuildings(game.players.length)
+    setGame({
+      ...game,
+      players: game.players.map((player, idx) => ({ ...player, buildingId: rec[idx] ?? 'vagrant', buildingUsed: false })),
+    })
+  }
+
+  const buildingCounts = game.players.reduce<Partial<Record<BuildingId, number>>>((acc, p) => {
+    const b = p.buildingId ?? 'vagrant'
+    acc[b] = (acc[b] ?? 0) + 1
+    return acc
+  }, {})
+
   return (
     <div className="buildings-setup">
+      {inspectBuilding && <BuildingInfoModal building={inspectBuilding} onClose={() => setInspectBuilding(null)} />}
       <div className="buildings-setup-toolbar">
-        <small>Asigna el edificio público que tiene cada persona delante en la mesa.</small>
-        <button type="button" className="text-button" onClick={shuffleBuildings}>Repartir al azar</button>
+        <small>Toca cualquier fila para cambiar su edificio o pulsa el icono de información para leer sus reglas.</small>
+        <div className="buildings-toolbar-actions">
+          <button type="button" className="text-button" onClick={resetRecommended}>Recomendado</button>
+          <button type="button" className="text-button" onClick={shuffleBuildings}>Repartir al azar</button>
+        </div>
       </div>
       <div className="buildings-setup-list">
         {game.players.map((player, idx) => {
           const bId = player.buildingId ?? 'vagrant'
           const bDef = BUILDINGS[bId]
+          const isEditing = editingPlayerId === player.id
           return (
-            <div className="building-row" key={player.id}>
-              <div className="building-player">
-                <span className="seat-pill">{idx + 1}</span>
-                <div>
-                  <strong>{player.name}</strong>
+            <div className={`building-row-card ${isEditing ? 'expanded' : ''}`} key={player.id}>
+              <div className="building-row-main">
+                <BuildingArtwork buildingId={bId} className="role-icon" />
+                <div className="building-player-info">
+                  <div className="building-player-title">
+                    <span className="seat-pill">{idx + 1}</span>
+                    <strong>{player.name}</strong>
+                    <span className="building-badge-pill">{bDef.buildingName} · {bDef.name}</span>
+                  </div>
                   <small>{bDef.description}</small>
                 </div>
+                <div className="building-row-actions">
+                  <button
+                    type="button"
+                    className="role-info-btn"
+                    onClick={() => setInspectBuilding(bDef)}
+                    aria-label={`Ver reglas de ${bDef.name}`}
+                  >
+                    <Info size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-secondary building-change-btn"
+                    onClick={() => setEditingPlayerId(isEditing ? null : player.id)}
+                  >
+                    {isEditing ? 'Cerrar' : 'Cambiar'}
+                  </button>
+                </div>
               </div>
-              <label className="building-select-wrap">
-                <select value={bId} onChange={(e) => updateBuilding(player.id, e.target.value as BuildingId)} aria-label={`Edificio de ${player.name}`}>
-                  {BUILDING_LIST.map((b) => (
-                    <option key={b.id} value={b.id}>{b.icon} {b.name}</option>
-                  ))}
-                </select>
-                <ChevronDown size={15} />
-              </label>
+              {isEditing && (
+                <div className="building-picker-grid">
+                  {BUILDING_LIST.map((b) => {
+                    const currentCount = buildingCounts[b.id] ?? 0
+                    const selected = b.id === bId
+                    return (
+                      <button
+                        type="button"
+                        key={b.id}
+                        className={`building-option-card ${selected ? 'selected' : ''}`}
+                        onClick={() => updateBuilding(player.id, b.id)}
+                      >
+                        <BuildingArtwork buildingId={b.id} className="role-icon small" />
+                        <div>
+                          <strong>{b.name}</strong>
+                          <small>{b.buildingName} ({currentCount}/{b.maxCount})</small>
+                        </div>
+                        {selected && <Check size={16} />}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )
         })}
@@ -902,10 +1010,15 @@ function BuildingsSetupPhase({ game, setGame }: { game: GameState; setGame: (gam
 }
 
 function BuildingDayActions({ game, setGame }: { game: GameState; setGame: (game: GameState) => void }) {
-  const [openTool, setOpenTool] = useState<'mayor' | 'barber' | 'confessor' | 'apothecary' | null>(null)
+  const [inspectBuilding, setInspectBuilding] = useState<BuildingDefinition | null>(null)
+  const [openTool, setOpenTool] = useState<'barber' | 'confessor' | 'apothecary' | null>(null)
   const [mayorVagrantId, setMayorVagrantId] = useState<string>('')
-  const [mayorBuilding, setMayorBuilding] = useState<BuildingId | ''>('')
+  const [mayorBuildingIndex, setMayorBuildingIndex] = useState<number>(0)
+  const [barberTargetId, setBarberTargetId] = useState<string>('')
+  const [barberCard, setBarberCard] = useState<string>('')
   const [confessorTargetId, setConfessorTargetId] = useState<string>('')
+  const [confessorCard, setConfessorCard] = useState<string>('')
+  const [apothecaryTargetId, setApothecaryTargetId] = useState<string>('')
 
   if (!game.buildingsEnabled || game.villagePowersDisabled) return null
   const alive = alivePlayers(game)
@@ -917,129 +1030,280 @@ function BuildingDayActions({ game, setGame }: { game: GameState; setGame: (game
   const vagrants = alive.filter((p) => isVagrant(game, p))
   const vacantList = game.vacantBuildings ?? []
   const canMayorAct = Boolean(mayor && vacantList.length > 0 && vagrants.length > 0)
+  const selectedVacantBuilding = vacantList[mayorBuildingIndex] ?? vacantList[0]
+
   const barberTargets = alive.filter((p) => barber && p.id !== barber.id && !isVagrant(game, p))
   const confessorTargets = alive.filter((p) => confessor && p.id !== confessor.id)
   const spentBuildingPlayers = alive.filter((p) => apothecary && p.id !== apothecary.id && p.buildingId && p.buildingUsed && BUILDINGS[p.buildingId].uniquePower)
 
-  if (!canMayorAct && !barber && !confessor && !(apothecary && spentBuildingPlayers.length > 0)) return null
+  const barberResult = game.barberResult
+  const barberVictim = barberResult ? game.players.find((p) => p.id === barberResult.targetId) : undefined
+  const barberActor = barberResult ? game.players.find((p) => p.id === barberResult.barberId) : undefined
+
+  if (!canMayorAct && !barber && !confessor && !apothecary && !barberResult) return null
+
+  const barberMissingCard = needsCardReveal(game, barberTargetId) && !barberCard
+  const confessorMissingCard = needsCardReveal(game, confessorTargetId) && !confessorCard
 
   return (
-    <div className="building-day-panel" aria-label="Oficios y edificios del día">
-      <div className="building-day-header">
-        <Building2 size={16} aria-hidden="true" />
-        <strong>Poderes de Edificaciones (Día)</strong>
-      </div>
-      <div className="building-day-buttons">
-        {canMayorAct && (
-          <button type="button" className={`building-chip ${openTool === 'mayor' ? 'active' : ''}`} onClick={() => setOpenTool(openTool === 'mayor' ? null : 'mayor')}>
-            🏛️ Alcalde ({vacantList.length} libre{vacantList.length > 1 ? 's' : ''})
-          </button>
-        )}
-        {barber && (
-          <button type="button" className={`building-chip ${openTool === 'barber' ? 'active' : ''}`} onClick={() => setOpenTool(openTool === 'barber' ? null : 'barber')}>
-            🪒 Barbero ({barber.name})
-          </button>
-        )}
-        {confessor && (
-          <button type="button" className={`building-chip ${openTool === 'confessor' ? 'active' : ''}`} onClick={() => setOpenTool(openTool === 'confessor' ? null : 'confessor')}>
-            ⛪ Confesor ({confessor.name})
-          </button>
-        )}
-        {apothecary && spentBuildingPlayers.length > 0 && (
-          <button type="button" className={`building-chip ${openTool === 'apothecary' ? 'active' : ''}`} onClick={() => setOpenTool(openTool === 'apothecary' ? null : 'apothecary')}>
-            ⚗️ Boticario ({apothecary.name})
-          </button>
-        )}
-      </div>
+    <div className="building-day-section" aria-label="Oficios y edificios del día">
+      {inspectBuilding && <BuildingInfoModal building={inspectBuilding} onClose={() => setInspectBuilding(null)} />}
 
-      {openTool === 'mayor' && canMayorAct && (
-        <div className="building-tool-drawer">
-          <p><strong>🏛️ {mayor?.name} (Alcalde):</strong> entrega un edificio vacante a un Vagabundo con su poder restaurado.</p>
-          <ChoiceSelect
-            label="Edificio vacante a entregar"
-            value={mayorBuilding}
-            onChange={(val) => setMayorBuilding(val as BuildingId | '')}
-            options={vacantList.map((b, i) => ({ value: `${b}:${i}`, label: `${BUILDINGS[b].icon} ${BUILDINGS[b].name}` }))}
-          />
+      {/* Resultado inmediato cuando el Barbero acaba de usar su navaja */}
+      {barberResult && barberVictim && barberActor && (
+        <div className={`morning-card ${barberResult.targetWasWolf ? 'safe' : 'danger'}`}>
+          <BuildingArtwork buildingId="barber" className="role-icon small" />
+          <div>
+            <strong>
+              {barberResult.targetWasWolf
+                ? `La aldea felicita al Barbero (${barberActor.name})`
+                : `El Barbero (${barberActor.name}) también ha sido ejecutado`}
+            </strong>
+            <small>
+              {barberActor.name} degolló a {barberVictim.name} ({barberVictim.roleId ? ROLES[barberVictim.roleId].name : 'carta revelada'}).{' '}
+              {barberResult.targetWasWolf
+                ? 'Como era un Hombre Lobo, el crimen del Barbero queda perdonado.'
+                : 'Como NO era un Hombre Lobo, el Barbero muere ejecutado junto a su víctima.'}
+            </small>
+          </div>
+        </div>
+      )}
+
+      {/* Aviso destacado del Alcalde cuando hay algún edificio vacante y algún Vagabundo */}
+      {canMayorAct && mayor && selectedVacantBuilding && (
+        <div className="discovery-box mayor-vacant-box">
+          <div className="building-callout-head">
+            <BuildingArtwork buildingId="mayor" className="role-icon small" />
+            <div>
+              <strong>{mayor.name} · El Ayuntamiento (Alcalde)</strong>
+              <small>Hay {vacantList.length === 1 ? 'un edificio vacante' : `${vacantList.length} edificios vacantes`}. El Alcalde puede alojar en él a un Vagabundo (con su poder restaurado).</small>
+            </div>
+            <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.mayor)} aria-label="Reglas del Alcalde"><Info size={16} /></button>
+          </div>
+          <SpokenPrompt text={BUILDINGS.mayor.spokenPrompt} />
+          {vacantList.length > 1 && (
+            <div className="vacant-building-tabs">
+              {vacantList.map((bId, idx) => (
+                <button
+                  key={`${bId}-${idx}`}
+                  type="button"
+                  className={`building-option-card ${idx === mayorBuildingIndex ? 'selected' : ''}`}
+                  onClick={() => setMayorBuildingIndex(idx)}
+                >
+                  <BuildingArtwork buildingId={bId} className="role-icon small" />
+                  <div>
+                    <strong>{BUILDINGS[bId].buildingName}</strong>
+                    <small>{BUILDINGS[bId].name}</small>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          {vacantList.length === 1 && (
+            <div className="vacant-single-banner">
+              <BuildingArtwork buildingId={selectedVacantBuilding} className="role-icon small" />
+              <div>
+                <strong>Edificio libre: {BUILDINGS[selectedVacantBuilding].buildingName} ({BUILDINGS[selectedVacantBuilding].name})</strong>
+                <small>{BUILDINGS[selectedVacantBuilding].description}</small>
+              </div>
+            </div>
+          )}
           <PlayerPicker
             players={vagrants}
             selected={mayorVagrantId ? [mayorVagrantId] : []}
             onSelect={setMayorVagrantId}
-            label="Vagabundo que recibe el edificio"
+            label="Vagabundo elegido por el Alcalde"
             compact
           />
-          <button
-            type="button"
-            className="button button-dark"
-            disabled={!mayorBuilding || !mayorVagrantId}
-            onClick={() => {
-              const bId = mayorBuilding.split(':')[0] as BuildingId
-              setGame(applyMayorAssign(game, mayorVagrantId, bId))
-              setMayorBuilding('')
-              setMayorVagrantId('')
-              setOpenTool(null)
-            }}
-          >
-            Entregar edificio
-          </button>
+          <div className="building-tool-actions">
+            <button
+              type="button"
+              className="button button-dark"
+              disabled={!mayorVagrantId}
+              onClick={() => {
+                setGame(applyMayorAssign(game, mayorVagrantId, selectedVacantBuilding))
+                setMayorVagrantId('')
+                setMayorBuildingIndex(0)
+              }}
+            >
+              Entregar {BUILDINGS[selectedVacantBuilding].buildingName}
+            </button>
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => {
+                setGame(dismissVacantBuilding(game, selectedVacantBuilding))
+                setMayorVagrantId('')
+                setMayorBuildingIndex(0)
+              }}
+            >
+              El Vagabundo rechaza el edificio
+            </button>
+          </div>
         </div>
       )}
 
-      {openTool === 'barber' && barber && (
-        <div className="building-tool-drawer">
-          <p><strong>🪒 {barber.name} (Barbero):</strong> degüella a una persona con edificio. Si no es un Hombre Lobo, el Barbero también muere.</p>
-          <PlayerPicker
-            players={barberTargets}
-            selected={[]}
-            onSelect={(targetId) => {
-              setGame(applyBarberCut(game, targetId))
-              setOpenTool(null)
-            }}
-            label="Persona degollada por el Barbero"
-            compact
-          />
-        </div>
-      )}
+      {/* Acciones voluntarias durante el día: Barbero, Confesor y Boticario */}
+      {(barber || confessor || apothecary) && (
+        <div className="building-day-panel">
+          <div className="building-day-header">
+            <Building2 size={16} aria-hidden="true" />
+            <strong>Oficios con acción diurna disponible</strong>
+          </div>
+          <div className="building-day-cards">
+            {barber && (
+              <div className={`building-action-card ${openTool === 'barber' ? 'expanded' : ''}`}>
+                <div className="building-action-row">
+                  <BuildingArtwork buildingId="barber" className="role-icon small" />
+                  <div>
+                    <strong>{barber.name} · La Barbería (Barbero)</strong>
+                    <small>Poder único: elimina en el acto a alguien con edificio. Si no es Lobo, el Barbero también muere.</small>
+                  </div>
+                  <div className="building-row-actions">
+                    <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.barber)} aria-label="Reglas del Barbero"><Info size={16} /></button>
+                    <button type="button" className="button button-secondary building-change-btn" onClick={() => setOpenTool(openTool === 'barber' ? null : 'barber')}>
+                      {openTool === 'barber' ? 'Cancelar' : 'Usar navaja'}
+                    </button>
+                  </div>
+                </div>
+                {openTool === 'barber' && (
+                  <div className="building-tool-drawer">
+                    <SpokenPrompt text={BUILDINGS.barber.spokenPrompt} />
+                    <PlayerPicker
+                      players={barberTargets}
+                      selected={barberTargetId ? [barberTargetId] : []}
+                      onSelect={(id) => { setBarberTargetId(id); setBarberCard('') }}
+                      label="Persona con edificio degollada por el Barbero"
+                      compact
+                    />
+                    <CardReveal game={game} playerId={barberTargetId} value={barberCard} onChange={setBarberCard} />
+                    <div className="building-tool-actions">
+                      <button
+                        type="button"
+                        className="button button-dark"
+                        disabled={!barberTargetId || barberMissingCard}
+                        onClick={() => {
+                          const revealed = revealCard(game, barberTargetId, (barberCard || undefined) as RoleId | undefined)
+                          setGame(applyBarberCut(revealed, barberTargetId))
+                          setBarberTargetId('')
+                          setBarberCard('')
+                          setOpenTool(null)
+                        }}
+                      >
+                        <Skull size={17} /> Confirmar ejecución del Barbero
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
-      {openTool === 'confessor' && confessor && (
-        <div className="building-tool-drawer">
-          <p><strong>⛪ {confessor.name} (Confesor):</strong> elige a una persona para que le muestre su carta en secreto (poder único).</p>
-          <PlayerPicker
-            players={confessorTargets}
-            selected={confessorTargetId ? [confessorTargetId] : []}
-            onSelect={setConfessorTargetId}
-            label="Persona confesada"
-            compact
-          />
-          {confessorTargetId && <RevealCard game={game} playerId={confessorTargetId} />}
-          <button
-            type="button"
-            className="button button-dark"
-            disabled={!confessorTargetId}
-            onClick={() => {
-              setGame(applyConfessorPower(game))
-              setConfessorTargetId('')
-              setOpenTool(null)
-            }}
-          >
-            Marcar confesión realizada
-          </button>
-        </div>
-      )}
+            {confessor && (
+              <div className={`building-action-card ${openTool === 'confessor' ? 'expanded' : ''}`}>
+                <div className="building-action-row">
+                  <BuildingArtwork buildingId="confessor" className="role-icon small" />
+                  <div>
+                    <strong>{confessor.name} · La Iglesia (Confesor)</strong>
+                    <small>Poder único: obliga a un jugador a mostrarle inmediatamente en secreto su carta de personaje.</small>
+                  </div>
+                  <div className="building-row-actions">
+                    <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.confessor)} aria-label="Reglas del Confesor"><Info size={16} /></button>
+                    <button type="button" className="button button-secondary building-change-btn" onClick={() => setOpenTool(openTool === 'confessor' ? null : 'confessor')}>
+                      {openTool === 'confessor' ? 'Cancelar' : 'Confesar'}
+                    </button>
+                  </div>
+                </div>
+                {openTool === 'confessor' && (
+                  <div className="building-tool-drawer">
+                    <SpokenPrompt text={BUILDINGS.confessor.spokenPrompt} />
+                    <PlayerPicker
+                      players={confessorTargets}
+                      selected={confessorTargetId ? [confessorTargetId] : []}
+                      onSelect={(id) => { setConfessorTargetId(id); setConfessorCard('') }}
+                      label="Jugador llamado a confesión"
+                      compact
+                    />
+                    <CardReveal game={game} playerId={confessorTargetId} value={confessorCard} onChange={setConfessorCard} />
+                    {confessorTargetId && !confessorMissingCard && (
+                      <RevealCard
+                        game={confessorCard ? revealCard(game, confessorTargetId, confessorCard as RoleId) : game}
+                        playerId={confessorTargetId}
+                      />
+                    )}
+                    <div className="building-tool-actions">
+                      <button
+                        type="button"
+                        className="button button-dark"
+                        disabled={!confessorTargetId || confessorMissingCard}
+                        onClick={() => {
+                          const revealed = revealCard(game, confessorTargetId, (confessorCard || undefined) as RoleId | undefined)
+                          setGame(applyConfessorPower(revealed))
+                          setConfessorTargetId('')
+                          setConfessorCard('')
+                          setOpenTool(null)
+                        }}
+                      >
+                        <Check size={17} /> Confirmar confesión (gastar ficha)
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
-      {openTool === 'apothecary' && apothecary && (
-        <div className="building-tool-drawer">
-          <p><strong>⚗️ {apothecary.name} (Boticario):</strong> devuelve el poder único de edificio a quien ya lo haya gastado.</p>
-          <PlayerPicker
-            players={spentBuildingPlayers}
-            selected={[]}
-            onSelect={(targetId) => {
-              setGame(applyApothecaryRestore(game, targetId))
-              setOpenTool(null)
-            }}
-            label="Propietario que recupera su poder"
-            compact
-          />
+            {apothecary && (
+              <div className={`building-action-card ${openTool === 'apothecary' ? 'expanded' : ''}`}>
+                <div className="building-action-row">
+                  <BuildingArtwork buildingId="apothecary" className="role-icon small" />
+                  <div>
+                    <strong>{apothecary.name} · La Choza (Boticario)</strong>
+                    <small>
+                      {spentBuildingPlayers.length > 0
+                        ? 'Poder único: devuelve a otro jugador la ficha ya utilizada de su edificio.'
+                        : 'Poder único disponible (aún ningún edificio único ha gastado su ficha).'}
+                    </small>
+                  </div>
+                  <div className="building-row-actions">
+                    <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.apothecary)} aria-label="Reglas del Boticario"><Info size={16} /></button>
+                    <button
+                      type="button"
+                      className="button button-secondary building-change-btn"
+                      disabled={spentBuildingPlayers.length === 0}
+                      onClick={() => setOpenTool(openTool === 'apothecary' ? null : 'apothecary')}
+                    >
+                      {openTool === 'apothecary' ? 'Cancelar' : 'Restaurar ficha'}
+                    </button>
+                  </div>
+                </div>
+                {openTool === 'apothecary' && spentBuildingPlayers.length > 0 && (
+                  <div className="building-tool-drawer">
+                    <SpokenPrompt text={BUILDINGS.apothecary.spokenPrompt} />
+                    <PlayerPicker
+                      players={spentBuildingPlayers}
+                      selected={apothecaryTargetId ? [apothecaryTargetId] : []}
+                      onSelect={setApothecaryTargetId}
+                      label="Propietario que recupera su ficha de edificio"
+                      compact
+                    />
+                    <div className="building-tool-actions">
+                      <button
+                        type="button"
+                        className="button button-dark"
+                        disabled={!apothecaryTargetId}
+                        onClick={() => {
+                          setGame(applyApothecaryRestore(game, apothecaryTargetId))
+                          setApothecaryTargetId('')
+                          setOpenTool(null)
+                        }}
+                      >
+                        <Check size={17} /> Confirmar remedio del Boticario
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1047,12 +1311,29 @@ function BuildingDayActions({ game, setGame }: { game: GameState; setGame: (game
 }
 
 function SheriffElection({ game, setGame }: { game: GameState; setGame: (game: GameState) => void }) {
-  if (!canElectSheriff(game)) return null
+  if (!canElectSheriff(game)) {
+    if (game.buildingsEnabled && game.round >= 2 && !game.sheriffId && eligibleSheriffCandidates(game).length === 0) {
+      return <RuleCard title="Sin Granjeros no hay Alguacil"><p>No queda ningún Granjero vivo con Granja en la aldea, por lo que el cargo de Alguacil queda vacante.</p></RuleCard>
+    }
+    return null
+  }
   const firstElection = !game.players.some((player) => !player.alive)
   const tiebreakOnly = game.rules?.sheriffTiebreakOnly ?? true
   const ruleCopy = tiebreakOnly ? 'Su voto decidirá en caso de empate.' : 'Su voto contará doble.'
   const candidates = eligibleSheriffCandidates(game)
-  return <div className="discovery-box"><div><Star size={17} aria-hidden="true" /><strong>{game.buildingsEnabled ? 'Los Granjeros eligen Alguacil' : 'Elige al Alguacil'}</strong><small>{game.buildingsEnabled ? `Votan solo los Granjeros vivos entre sí. ${ruleCopy}` : firstElection ? `La aldea vota a su Alguacil. ${ruleCopy}` : `La aldea no tiene Alguacil. Votad a uno nuevo; ${ruleCopy.toLocaleLowerCase()}`}</small></div><PlayerPicker players={candidates} selected={[]} onSelect={(id) => setGame(electSheriff(game, id))} compact /></div>
+  return (
+    <div className="discovery-box">
+      <div className="building-callout-head">
+        {game.buildingsEnabled ? <BuildingArtwork buildingId="farmer" className="role-icon small" /> : <Star size={17} aria-hidden="true" />}
+        <div>
+          <strong>{game.buildingsEnabled ? 'Las Granjas · Los Granjeros eligen Alguacil' : 'Elige al Alguacil'}</strong>
+          <small>{game.buildingsEnabled ? `A partir del 2.º turno, los Granjeros votan entre ellos para designar al Alguacil. ${ruleCopy}` : firstElection ? `La aldea vota a su Alguacil. ${ruleCopy}` : `La aldea no tiene Alguacil. Votad a uno nuevo; ${ruleCopy.toLocaleLowerCase()}`}</small>
+        </div>
+      </div>
+      {game.buildingsEnabled && <SpokenPrompt text={BUILDINGS.farmer.spokenPrompt} />}
+      <PlayerPicker players={candidates} selected={[]} onSelect={(id) => setGame(electSheriff(game, id))} compact />
+    </div>
+  )
 }
 
 function HunterShot({ game, setGame }: { game: GameState; setGame: (game: GameState) => void }) {
@@ -1070,6 +1351,7 @@ function HunterShot({ game, setGame }: { game: GameState; setGame: (game: GameSt
 
 function VoteScreen({ game, setGame }: { game: GameState; setGame: (game: GameState) => void }) {
   const [card, setCard] = useState('')
+  const [inspectBuilding, setInspectBuilding] = useState<BuildingDefinition | null>(null)
   const alive = alivePlayers(game)
   const missingCard = needsCardReveal(game, game.pendingVoteTargetId) && !card
   const ravenName = game.players.find((player) => player.id === game.ravenVoteTargetId)?.name
@@ -1080,17 +1362,27 @@ function VoteScreen({ game, setGame }: { game: GameState; setGame: (game: GameSt
   const headmistress = game.buildingsEnabled ? alive.find((p) => hasActiveBuilding(game, p, 'headmistress')) : undefined
   const noble = game.buildingsEnabled ? alive.find((p) => hasActiveBuilding(game, p, 'noble')) : undefined
   const innkeeper = game.buildingsEnabled ? alive.find((p) => hasActiveBuilding(game, p, 'innkeeper')) : undefined
+  const mutedIds = game.headmistressMutedIds ?? []
+  const innkeeperMuted = Boolean(innkeeper && mutedIds.includes(innkeeper.id))
   const pendingPlayer = game.players.find((p) => p.id === game.pendingVoteTargetId)
   const canNoblePardon = Boolean(noble && pendingPlayer && !isVagrant(game, pendingPlayer))
   const voteTargets = game.buildingsEnabled ? alive.filter((p) => !hasActiveBuilding(game, p, 'innkeeper')) : alive
+  const innkeeperVotedCondemned = Boolean(
+    innkeeper && game.pendingVoteTargetId && game.innkeeperVoteTargetId === game.pendingVoteTargetId
+  )
 
   const toggleHeadmistressMute = (id: string) => {
-    const current = game.headmistressMutedIds ?? []
-    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id].slice(-2)
-    setGame({ ...game, headmistressMutedIds: next })
+    const next = mutedIds.includes(id) ? mutedIds.filter((item) => item !== id) : [...mutedIds, id].slice(-2)
+    const clearsInnkeeperVote = innkeeper && next.includes(innkeeper.id)
+    setGame({
+      ...game,
+      headmistressMutedIds: next,
+      ...(clearsInnkeeperVote ? { innkeeperVoteTargetId: undefined } : {}),
+    })
   }
 
   return <>
+    {inspectBuilding && <BuildingInfoModal building={inspectBuilding} onClose={() => setInspectBuilding(null)} />}
     {game.scapegoatVoters.length > 0 && <RuleCard title="Derecho a voto limitado"><p>Por decisión del Cabeza de Turco, solo votan: {game.scapegoatVoters.map((id) => game.players.find((player) => player.id === id)?.name).filter(Boolean).join(', ')}.</p></RuleCard>}
     {ravenName && <RuleCard title={`El Cuervo acusa a ${ravenName}`}><p>Empieza la votación con dos votos en contra.</p></RuleCard>}
     <SheriffElection game={game} setGame={setGame} />
@@ -1099,41 +1391,101 @@ function VoteScreen({ game, setGame }: { game: GameState; setGame: (game: GameSt
       : <RuleCard title={`El voto de ${sheriffName} cuenta doble`}><p>Es el Alguacil de la aldea.</p></RuleCard>
     )}
     {foolName && <RuleCard title={`${foolName} no vota`}><p>El Tonto de la Aldea ya fue indultado y perdió su derecho a voto.</p></RuleCard>}
-    {innkeeper && <RuleCard title={`🍺 ${innkeeper.name} (Tabernero) es inmune`}><p>No se puede votar contra el Tabernero, pero debe votar antes que nadie.</p></RuleCard>}
+
+    {/* Paso previo 1: La Escuela · Institutriz */}
     {headmistress && (
       <div className="discovery-box">
-        <div>
-          <strong>📏 {headmistress.name} (Institutriz) no vota</strong>
-          <small>Puede prohibir votar hoy hasta a 2 propietarios de edificios (nunca a Vagabundos).</small>
+        <div className="building-callout-head">
+          <BuildingArtwork buildingId="headmistress" className="role-icon small" />
+          <div>
+            <strong>{headmistress.name} · La Escuela (Institutriz)</strong>
+            <small>La Institutriz nunca vota. Antes de abrir la votación, puede amonestar hasta a 2 personas con edificio para que hoy no voten.</small>
+          </div>
+          <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.headmistress)} aria-label="Reglas de la Institutriz"><Info size={16} /></button>
         </div>
+        <SpokenPrompt text={BUILDINGS.headmistress.spokenPrompt} />
         <PlayerPicker
           players={alive.filter((p) => p.id !== headmistress.id && !isVagrant(game, p))}
-          selected={game.headmistressMutedIds ?? []}
+          selected={mutedIds}
           onSelect={toggleHeadmistressMute}
+          label={`Amonestados sin voto hoy (${mutedIds.length}/2)`}
           compact
         />
       </div>
     )}
-    <PlayerPicker players={voteTargets} selected={game.pendingVoteTargetId ? [game.pendingVoteTargetId] : []} onSelect={(id) => { setCard(''); setGame({ ...game, pendingVoteTargetId: id, noblePardonRequested: false, innkeeperLostImmunity: false }) }} label="Persona elegida por la aldea" />
+
+    {/* Paso previo 2: La Taberna · Tabernero vota antes que nadie */}
+    {innkeeper && (
+      <div className="discovery-box">
+        <div className="building-callout-head">
+          <BuildingArtwork buildingId="innkeeper" className="role-icon small" />
+          <div>
+            <strong>{innkeeper.name} · La Taberna (Tabernero)</strong>
+            <small>Nadie puede votar contra {innkeeper.name}. Debe anunciar su voto en voz alta antes que el resto; si su votado resulta elegido por la aldea, perderá su ficha e inmunidad.</small>
+          </div>
+          <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.innkeeper)} aria-label="Reglas del Tabernero"><Info size={16} /></button>
+        </div>
+        {innkeeperMuted ? (
+          <RuleCard title={`${innkeeper.name} hoy no puede votar`}>
+            <p>La Institutriz le ha prohibido el voto en este turno, por lo que no emite voto anticipado.</p>
+          </RuleCard>
+        ) : (
+          <>
+            <SpokenPrompt text={BUILDINGS.innkeeper.spokenPrompt} />
+            <PlayerPicker
+              players={voteTargets.filter((p) => p.id !== innkeeper.id)}
+              selected={game.innkeeperVoteTargetId ? [game.innkeeperVoteTargetId] : []}
+              onSelect={(id) => setGame({ ...game, innkeeperVoteTargetId: game.innkeeperVoteTargetId === id ? undefined : id })}
+              label={`1. ¿Contra quién vota primero ${innkeeper.name} (Tabernero)?`}
+              compact
+            />
+          </>
+        )}
+      </div>
+    )}
+
+    {/* Votación general de la aldea */}
+    <PlayerPicker
+      players={voteTargets}
+      selected={game.pendingVoteTargetId ? [game.pendingVoteTargetId] : []}
+      onSelect={(id) => { setCard(''); setGame({ ...game, pendingVoteTargetId: id, noblePardonRequested: false, innkeeperLostImmunity: false }) }}
+      label={innkeeper && !innkeeperMuted ? '2. Persona condenada por la mayoría de la aldea' : 'Persona elegida por la aldea'}
+    />
     <CardReveal game={game} playerId={game.pendingVoteTargetId} value={card} onChange={setCard} />
-    {canNoblePardon && (
-      <ToggleCard
-        active={Boolean(game.noblePardonRequested)}
-        icon={<Star size={22} />}
-        title={`👑 ${noble?.name} (Noble) indulta a ${pendingPlayer?.name}`}
-        text="Poder único: la persona condenada no es eliminada ni revela su carta."
-        onClick={() => setGame({ ...game, noblePardonRequested: !game.noblePardonRequested })}
-      />
+
+    {/* Aviso automático si el voto del Tabernero coincide con el condenado */}
+    {innkeeper && innkeeperVotedCondemned && pendingPlayer && (
+      <div className="morning-card danger">
+        <BuildingArtwork buildingId="innkeeper" className="role-icon small" />
+        <div>
+          <strong>{innkeeper.name} votó contra {pendingPlayer.name}: pierde su inmunidad</strong>
+          <small>Al haber votado en contra de la persona elegida por la aldea (incluso si después es indultada), {innkeeper.name} entrega su ficha de Copa y pierde su inmunidad.</small>
+        </div>
+      </div>
     )}
-    {innkeeper && game.pendingVoteTargetId && !game.noblePardonRequested && (
-      <ToggleCard
-        active={Boolean(game.innkeeperLostImmunity)}
-        icon={<Flame size={22} />}
-        title={`🍺 ${innkeeper.name} votó contra ${pendingPlayer?.name}`}
-        text="Si el Tabernero vota a la persona que resulta eliminada, pierde su taberna y su inmunidad."
-        onClick={() => setGame({ ...game, innkeeperLostImmunity: !game.innkeeperLostImmunity })}
-      />
+
+    {/* Paso posterior: El Palacete · Noble puede indultar al condenado */}
+    {canNoblePardon && noble && pendingPlayer && (
+      <div className="discovery-box">
+        <div className="building-callout-head">
+          <BuildingArtwork buildingId="noble" className="role-icon small" />
+          <div>
+            <strong>{noble.name} · El Palacete (Noble)</strong>
+            <small>A petición de {pendingPlayer.name}, el Noble puede gastar su ficha de Blasón para concederle el indulto.</small>
+          </div>
+          <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.noble)} aria-label="Reglas del Noble"><Info size={16} /></button>
+        </div>
+        <ToggleCard
+          active={Boolean(game.noblePardonRequested)}
+          icon={<BuildingArtwork buildingId="noble" className="role-icon small" />}
+          title={`${noble.name} indulta a ${pendingPlayer.name}`}
+          text="Poder único: la persona condenada no es eliminada ni revela su carta de personaje."
+          onClick={() => setGame({ ...game, noblePardonRequested: !game.noblePardonRequested })}
+        />
+        {game.noblePardonRequested && <SpokenPrompt text={BUILDINGS.noble.spokenPrompt} />}
+      </div>
     )}
+
     {!game.villagePowersDisabled && game.judgePowerAvailable && alive.some((player) => player.roleId === 'stuttering_judge') && <ToggleCard active={game.judgeSecondVoteRequested} icon={<Scale size={22} />} title="El Juez ha hecho la señal" text="Después de esta expulsión habrá otra votación, sin debate." onClick={() => setGame({ ...game, judgeSecondVoteRequested: !game.judgeSecondVoteRequested })} />}
     <div className="game-action"><button className="button button-dark button-large" disabled={!game.pendingVoteTargetId || missingCard} onClick={() => game.pendingVoteTargetId && setGame(eliminateByVote(revealCard(game, game.pendingVoteTargetId, (card || undefined) as RoleId | undefined), game.pendingVoteTargetId))}><Skull size={19} /> {game.noblePardonRequested ? 'Confirmar indulto del Noble' : 'Confirmar expulsión'}</button>{scapegoatAlive && <button className="button button-outline" onClick={() => setGame(beginScapegoatTie(game))}>La votación ha empatado</button>}<button className="text-button" onClick={() => setGame(phaseAfterNoVote(game))}>Nadie es expulsado</button></div>
   </>
@@ -1141,12 +1493,21 @@ function VoteScreen({ game, setGame }: { game: GameState; setGame: (game: GameSt
 
 function DaySummary({ game }: { game: GameState }) {
   const bear = game.players.find((player) => player.roleId === 'bear_tamer' && player.alive)
+  const burnedPlayer = game.burnedPlayerId ? game.players.find((player) => player.id === game.burnedPlayerId) : undefined
   return <div className="day-summary">
     {game.lastDeaths.length > 0 && <section className="death-summary" aria-label="Víctimas de la noche"><div className="death-summary-head"><span><Skull size={18} /></span><div><strong>Víctimas de la noche</strong><small>Estas personas han muerto esta noche</small></div><b>{game.lastDeaths.length}</b></div><div className="death-grid">{game.lastDeaths.map((id) => { const player = game.players.find((item) => item.id === id); if (!player) return null; return <article className="death-card" key={id}><RoleArtwork roleId={player.roleId} className="death-role-art" /><div><small>Ha muerto</small><strong>{player.name}</strong><p>{player.roleId ? ROLES[player.roleId].name : 'Carta sin revelar'}</p></div></article> })}</div></section>}
     {!game.lastDeaths.length && <div className="no-deaths-card"><span className="icon-badge safe"><Sun size={24} /></span><div><strong>La noche ha pasado tranquila</strong><small>Todo el mundo sigue con vida.</small></div></div>}
     {bear && !game.villagePowersDisabled && <div className={`morning-card ${bearGrowls(game) ? 'danger' : 'safe'}`}><span className={`icon-badge ${bearGrowls(game) ? 'danger' : 'safe'}`}><PawPrint size={22} /></span><div><strong>{bearGrowls(game) ? 'El oso gruñe' : 'El oso está tranquilo'}</strong><small>{bearGrowls(game) ? 'Hay un lobo vivo junto al Domador.' : 'No hay lobos vivos junto al Domador.'}</small></div></div>}
     {game.villagePowersDisabled && <div className="morning-card danger"><span className="icon-badge danger"><TreeDeciduous size={22} /></span><div><strong>La aldea pierde sus poderes</strong><small>El Anciano murió por una causa ajena al ataque de los lobos.</small></div></div>}
-    {game.burnedPlayerId && <div className="morning-card"><span className="icon-badge"><Flame size={22} /></span><div><strong>Edificio quemado</strong><small>Quita el edificio de {game.players.find((player) => player.id === game.burnedPlayerId)?.name}. Si sigue vivo, pasa a ser vagabundo.</small></div></div>}
+    {burnedPlayer && (
+      <div className="morning-card">
+        <BuildingArtwork buildingId="vagrant" className="role-icon small" />
+        <div>
+          <strong>Edificio reducido a cenizas por el Pirómano</strong>
+          <small>Retira el edificio de {burnedPlayer.name}. {burnedPlayer.alive ? 'A partir de ahora continúa la partida como Vagabundo (con ficha de Hatillo).' : 'Su edificio ha quedado destruido por las llamas.'}</small>
+        </div>
+      </div>
+    )}
   </div>
 }
 
@@ -1239,6 +1600,7 @@ function PlayerPicker({ players, selected, onSelect, label, compact = false }: {
 
 function RoleDrawer({ game, onClose }: { game: GameState; onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null)
+  const [inspectBuilding, setInspectBuilding] = useState<BuildingDefinition | null>(null)
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
     closeRef.current?.focus()
@@ -1246,11 +1608,28 @@ function RoleDrawer({ game, onClose }: { game: GameState; onClose: () => void })
     document.addEventListener('keydown', onKey)
     return () => { document.removeEventListener('keydown', onKey); opener?.focus() }
   }, [onClose])
-  return <div className="drawer-backdrop" onClick={onClose}><aside className="role-drawer" role="dialog" aria-modal="true" aria-labelledby="role-drawer-title" onClick={(event) => event.stopPropagation()}><div className="drawer-head"><div><h3 id="role-drawer-title">Cartas y estados</h3><small className="drawer-subtitle">Información secreta del narrador</small></div><button ref={closeRef} className="icon-button" onClick={onClose} aria-label="Cerrar"><X size={19} /></button></div><div className="drawer-list">{game.players.map((player) => {
-    const bLabel = game.buildingsEnabled && player.buildingId ? `${BUILDINGS[player.buildingId].icon} ${BUILDINGS[player.buildingId].name}${player.buildingUsed ? ' (gastado)' : ''}` : ''
-    const states = [bLabel, player.id === game.sheriffId ? 'Alguacil' : '', game.infectedIds.includes(player.id) ? 'Infectado' : '', game.charmedIds.includes(player.id) ? 'Hechizado' : '', game.lovers.includes(player.id) ? 'Enamorado' : '', player.id === game.mentorId ? 'Modelo' : ''].filter(Boolean)
-    return <div className={`drawer-player ${!player.alive ? 'dead' : ''}`} key={player.id}><RoleArtwork roleId={player.roleId} className="role-icon small" /><div><strong>{player.name}</strong><small>{player.roleId ? ROLES[player.roleId].name : 'Aún sin ubicar'}{states.length ? ` · ${states.join(' · ')}` : ''}</small></div><b>{player.alive ? 'Con vida' : 'Eliminado'}</b></div>
-  })}</div><button className="button button-primary" onClick={onClose}><Eye size={17} /> Cerrar</button></aside></div>
+  return <div className="drawer-backdrop" onClick={onClose}><aside className="role-drawer" role="dialog" aria-modal="true" aria-labelledby="role-drawer-title" onClick={(event) => event.stopPropagation()}>
+    {inspectBuilding && <BuildingInfoModal building={inspectBuilding} onClose={() => setInspectBuilding(null)} />}
+    <div className="drawer-head"><div><h3 id="role-drawer-title">Cartas y estados</h3><small className="drawer-subtitle">Información secreta del narrador</small></div><button ref={closeRef} className="icon-button" onClick={onClose} aria-label="Cerrar"><X size={19} /></button></div>
+    <div className="drawer-list">{game.players.map((player) => {
+      const bDef = game.buildingsEnabled && player.buildingId ? BUILDINGS[player.buildingId] : undefined
+      const bLabel = bDef ? `${bDef.buildingName} · ${bDef.name}${player.buildingUsed ? ' (ficha gastada)' : ''}` : ''
+      const states = [bLabel, player.id === game.sheriffId ? 'Alguacil' : '', game.infectedIds.includes(player.id) ? 'Infectado' : '', game.charmedIds.includes(player.id) ? 'Hechizado' : '', game.lovers.includes(player.id) ? 'Enamorado' : '', player.id === game.mentorId ? 'Modelo' : ''].filter(Boolean)
+      return <div className={`drawer-player ${!player.alive ? 'dead' : ''}`} key={player.id}>
+        <div className="drawer-player-icons">
+          <RoleArtwork roleId={player.roleId} className="role-icon small" />
+          {bDef && (
+            <button type="button" className="drawer-building-btn" onClick={() => setInspectBuilding(bDef)} title={`Ver reglas de ${bDef.name}`}>
+              <BuildingArtwork buildingId={bDef.id} className="role-icon tiny" />
+            </button>
+          )}
+        </div>
+        <div><strong>{player.name}</strong><small>{player.roleId ? ROLES[player.roleId].name : 'Aún sin ubicar'}{states.length ? ` · ${states.join(' · ')}` : ''}</small></div>
+        <b>{player.alive ? 'Con vida' : 'Eliminado'}</b>
+      </div>
+    })}</div>
+    <button className="button button-primary" onClick={onClose}><Eye size={17} /> Cerrar</button>
+  </aside></div>
 }
 
 function RoleArtwork({ roleId, className = '' }: { roleId?: RoleId; className?: string }) {

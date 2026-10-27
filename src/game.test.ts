@@ -375,4 +375,24 @@ describe('expansión Edificaciones (Los edificios de La Aldea)', () => {
     expect(assigned.players[3].buildingUsed).toBe(false)
     expect(assigned.vacantBuildings).not.toContain('noble')
   })
+
+  it('el Tabernero pierde su ficha e inmunidad automáticamente si su voto coincide con el elegido por la aldea (incluso si es indultado)', () => {
+    const base = dealt(['werewolf', 'villager', 'villager', 'villager'])
+    const game: GameState = {
+      ...base,
+      buildingsEnabled: true,
+      phase: 'day-vote',
+      innkeeperVoteTargetId: id(base, 3),
+      noblePardonRequested: true,
+      players: [
+        { ...base.players[0], buildingId: 'farmer' },
+        { ...base.players[1], buildingId: 'innkeeper' },
+        { ...base.players[2], buildingId: 'noble' },
+        { ...base.players[3], buildingId: 'farmer' },
+      ],
+    }
+    const afterVote = eliminateByVote(game, id(game, 3))
+    expect(afterVote.players[3].alive).toBe(true)
+    expect(afterVote.players[1].buildingUsed).toBe(true)
+  })
 })
