@@ -5,7 +5,7 @@ const emptyNight = (): GameState['night'] => ({
   targets: {}, skippedRoles: [], infectVictim: false, littleGirlCaught: false, witchSaved: false,
 })
 
-export const createGame = (names: string[], deck: RoleId[], actorCards: RoleId[] = []): GameState => {
+export const createGame = (names: string[], deck: RoleId[], actorCards: RoleId[] = [], options: { sheriff?: boolean } = {}): GameState => {
   const players: Player[] = names.map((name) => ({ id: crypto.randomUUID(), name, alive: true }))
   const openingDay = deck.includes('angel')
   return {
@@ -17,7 +17,7 @@ export const createGame = (names: string[], deck: RoleId[], actorCards: RoleId[]
     judgeSecondVoteRequested: false, judgeSecondVoteActive: false, elderWolfHits: 0, villagePowersDisabled: false,
     foolRevealed: false, lovers: [], charmedIds: [], infectedIds: [], wildChildTurned: false,
     actorCards, actorUsedRoles: [], sectarianGroups: {}, wolfDeathsOccurred: false, pendingHunters: [],
-    scapegoatVoters: [], lastDeaths: [],
+    scapegoatVoters: [], lastDeaths: [], sheriffEnabled: Boolean(options.sheriff),
   }
 }
 
@@ -177,6 +177,8 @@ function finishDeaths(game: GameState): GameState {
   // En el día del Ángel aún no se conocen las cartas, así que solo puede terminar si gana el propio Ángel
   const winner = game.openingDay ? game.winner : determineWinner(game)
   if (winner) return { ...game, winner, phase: 'game-over', postDeathAction: undefined }
+  // El Alguacil que muere nombra sucesor antes de seguir; de noche se hace desde el amanecer
+  if (game.sheriffSuccessionPending) return game.postDeathAction === 'night-result' ? { ...game, phase: 'night-result', postDeathAction: undefined } : { ...game, phase: 'sheriff-action' }
   if (game.postDeathAction === 'night-result') return { ...game, phase: 'night-result', postDeathAction: undefined }
   if (game.postDeathAction === 'second-vote') return { ...game, phase: 'day-vote', postDeathAction: undefined, pendingVoteTargetId: undefined, judgeSecondVoteRequested: false, judgeSecondVoteActive: true }
   return prepareNextNight({ ...game, postDeathAction: undefined })
@@ -206,6 +208,7 @@ function applyDeaths(game: GameState, deaths: Array<{ playerId?: string; cause: 
       villagePowersDisabled: next.villagePowersDisabled || (player.roleId === 'elder' && !wolfAttack),
     }
 
+    if (player.id === next.sheriffId) next = { ...next, sheriffId: undefined, sheriffSuccessionPending: true }
     if (player.roleId === 'hunter' && !next.villagePowersDisabled && !next.pendingHunters.includes(player.id)) next.pendingHunters = [...next.pendingHunters, player.id]
     if (player.id === next.mentorId) next = { ...next, wildChildTurned: true }
     if (player.roleId === 'rusty_knight' && wolfAttack && !next.villagePowersDisabled) next = { ...next, rustyWolfDeathRound: next.round + 1 }
@@ -286,6 +289,8 @@ function finishVote(game: GameState, playerId: string): GameState {
     judgeSecondVoteRequested: false,
     judgeSecondVoteActive: false,
     scapegoatVoters: [],
+    // El Tonto indultado que era Alguacil pierde el cargo para el resto de la partida
+    ...(foolSurvives && playerId === game.sheriffId ? { sheriffId: undefined, sheriffLost: true } : {}),
   }
   if (foolSurvives) return finishDeaths({ ...next, postDeathAction: 'next-night' })
   return applyDeaths(next, [{ playerId, cause: 'vote' }], post)
@@ -326,6 +331,8 @@ export function resolveServantChoice(game: GameState, adoptsRole: boolean): Game
       players: game.players.map((player) => player.id === servant.id ? { ...player, roleId: targetRole } : player.id === targetId ? { ...player, roleId: 'devoted_servant' } : player),
       charmedIds: game.charmedIds.filter((id) => id !== servant.id),
       servantRestartRole: targetRole,
+      // La Sirvienta que era Alguacil pierde el cargo al cambiar de carta
+      sheriffId: game.sheriffId === servant.id ? undefined : game.sheriffId,
     }
   }
   return finishVote(next, targetId)
@@ -342,6 +349,15 @@ function restoredPowers(roleId: RoleId): Partial<GameState> {
   if (roleId === 'wild_child') return { mentorId: undefined, wildChildTurned: false }
   if (roleId === 'protector') return { lastProtectedTargetId: undefined }
   return {}
+}
+
+export const canElectSheriff = (game: GameState) => Boolean(game.sheriffEnabled && !game.sheriffId && !game.sheriffLost && !game.sheriffSuccessionPending)
+
+export const electSheriff = (game: GameState, playerId: string): GameState => ({ ...game, sheriffId: playerId })
+
+export function resolveSheriffSuccession(game: GameState, playerId: string): GameState {
+  const next = { ...game, sheriffId: playerId, sheriffSuccessionPending: false }
+  return next.postDeathAction ? finishDeaths(next) : { ...next, phase: 'night-result' }
 }
 
 export function resolveHunterShot(game: GameState, targetId: string): GameState {

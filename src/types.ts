@@ -34,7 +34,7 @@ export interface Player { id: string; name: string; roleId?: RoleId; alive: bool
 export type SetupStep = 'players' | 'roles'
 export type GamePhase =
   | 'night-intro' | 'role-call' | 'night-result' | 'day-discussion' | 'day-vote'
-  | 'hunter-action' | 'servant-action' | 'scapegoat-action' | 'game-over'
+  | 'hunter-action' | 'sheriff-action' | 'servant-action' | 'scapegoat-action' | 'game-over'
 export type Winner = 'village' | 'wolves' | 'angel' | 'flutist' | 'albino_wolf' | 'sectarian' | 'lovers' | 'nobody'
 export type DeathCause = 'wolves' | 'fierce-wolf' | 'albino-wolf' | 'witch' | 'vote' | 'hunter' | 'love' | 'rusty-sickness' | 'little-girl' | 'fire'
 export type PostDeathAction = 'night-result' | 'next-night' | 'second-vote'
@@ -93,6 +93,10 @@ export interface GameState {
   rustyWolfDeathRound?: number
   wolfDeathsOccurred: boolean
   pendingHunters: string[]
+  sheriffEnabled?: boolean
+  sheriffId?: string
+  sheriffLost?: boolean
+  sheriffSuccessionPending?: boolean
   postDeathAction?: PostDeathAction
   pendingVoteTargetId?: string
   scapegoatVoters: string[]

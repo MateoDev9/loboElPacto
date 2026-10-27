@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  advanceRoleCall, applyActorChoice, applyThiefChoice, assignRoleOwners, createGame, determineWinner, eliminateByVote,
-  prepareNextNight, resolveHunterShot, resolveNight, resolveServantChoice, revealCard, unrevealedCards,
+  advanceRoleCall, applyActorChoice, applyThiefChoice, assignRoleOwners, canElectSheriff, createGame, determineWinner, eliminateByVote,
+  electSheriff, prepareNextNight, resolveHunterShot, resolveNight, resolveServantChoice, resolveSheriffSuccession, revealCard, unrevealedCards,
 } from './game'
 import type { GameState, RoleId } from './types'
 
@@ -166,5 +166,68 @@ describe('día previo del Ángel', () => {
   it('el Ángel expulsado ese día gana', () => {
     const game = openingDay()
     expect(eliminateByVote(game, game.players[0].id).winner).toBe('angel')
+  })
+})
+
+describe('Alguacil', () => {
+  // Partida con Alguacil: el jugador `sheriff` tiene el cargo
+  const withSheriff = (roles: RoleId[], sheriff: number, patch: Partial<GameState> = {}) => {
+    const game = dealt(roles)
+    return { ...game, sheriffEnabled: true, sheriffId: id(game, sheriff), ...patch }
+  }
+
+  it('se puede elegir solo si está activado y nadie lo tiene', () => {
+    const game = dealt(['werewolf', 'villager', 'villager', 'villager'])
+    expect(canElectSheriff(game)).toBe(false)
+    const enabled = { ...game, sheriffEnabled: true }
+    expect(canElectSheriff(enabled)).toBe(true)
+    expect(canElectSheriff(electSheriff(enabled, id(game, 1)))).toBe(false)
+  })
+  it('si muere de noche, nombra sucesor desde el amanecer', () => {
+    const game = withSheriff(['werewolf', 'villager', 'villager', 'villager', 'villager'], 1)
+    const night = resolveNight(withNight(game, { wolfTargetId: id(game, 1) }))
+    expect(night.phase).toBe('night-result')
+    expect(night.sheriffSuccessionPending).toBe(true)
+    const after = resolveSheriffSuccession({ ...night, phase: 'sheriff-action' }, id(game, 2))
+    expect(after.phase).toBe('night-result')
+    expect(after.sheriffId).toBe(id(game, 2))
+  })
+  it('si lo expulsan de día, nombra sucesor y después empieza la noche', () => {
+    const game = withSheriff(['werewolf', 'villager', 'villager', 'villager', 'villager'], 1)
+    const vote = eliminateByVote({ ...game, phase: 'day-vote' }, id(game, 1))
+    expect(vote.phase).toBe('sheriff-action')
+    const after = resolveSheriffSuccession(vote, id(game, 3))
+    expect(after.phase).toBe('night-intro')
+    expect(after.sheriffId).toBe(id(game, 3))
+  })
+  it('el Alguacil que es Cazador dispara antes de nombrar sucesor', () => {
+    const game = withSheriff(['werewolf', 'hunter', 'villager', 'villager', 'villager'], 1)
+    const vote = eliminateByVote({ ...game, phase: 'day-vote' }, id(game, 1))
+    expect(vote.phase).toBe('hunter-action')
+    expect(resolveHunterShot(vote, id(game, 2)).phase).toBe('sheriff-action')
+  })
+  it('si su muerte termina la partida, no se pide sucesor', () => {
+    const game = withSheriff(['werewolf', 'villager', 'villager'], 0)
+    const vote = eliminateByVote({ ...game, phase: 'day-vote' }, id(game, 0))
+    expect(vote.phase).toBe('game-over')
+  })
+  it('el Tonto indultado pierde el cargo para siempre', () => {
+    const game = withSheriff(['werewolf', 'village_fool', 'villager', 'villager', 'villager'], 1)
+    const vote = eliminateByVote({ ...game, phase: 'day-vote' }, id(game, 1))
+    expect(vote.sheriffId).toBeUndefined()
+    expect(vote.sheriffLost).toBe(true)
+    expect(canElectSheriff(vote)).toBe(false)
+  })
+  it('la Sirvienta que era Alguacil lo pierde al cambiar de carta', () => {
+    const game = withSheriff(['werewolf', 'seer', 'devoted_servant', 'villager', 'villager', 'villager'], 2)
+    const result = resolveServantChoice(eliminateByVote({ ...game, phase: 'day-vote' }, id(game, 1)), true)
+    expect(result.sheriffId).toBeUndefined()
+    expect(canElectSheriff(result)).toBe(true)
+  })
+  it('si muere de pena por su pareja, también nombra sucesor', () => {
+    const game = withSheriff(['werewolf', 'villager', 'villager', 'villager', 'villager', 'villager'], 2)
+    const night = resolveNight(withNight({ ...game, lovers: [id(game, 1), id(game, 2)] }, { wolfTargetId: id(game, 1) }))
+    expect(night.players[2].alive).toBe(false)
+    expect(night.sheriffSuccessionPending).toBe(true)
   })
 })

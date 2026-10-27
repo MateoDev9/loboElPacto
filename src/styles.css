@@ -214,7 +214,7 @@ h1 em { font-weight: 800; color: var(--accent-gold); font-style: normal; }
 .round-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-gold); margin-right: 8px; box-shadow: 0 0 10px var(--accent-gold-bg); }
 .game-header > .header-actions { justify-self: end; display: flex; align-items: center; gap: 6px; font-size: inherit; text-transform: none; letter-spacing: normal; }
 .header-actions .icon-button:disabled { opacity: 0.35; cursor: default; }
-.roles-button { justify-self: end; min-height: 44px; padding: 0 6px; display: flex; gap: 8px; align-items: center; border: 0; border-radius: 10px; color: var(--text-main); background: transparent; font-weight: 600; font-size: 13px; }
+.roles-button { justify-self: end; min-height: 44px; padding: 0 6px; white-space: nowrap; display: flex; gap: 8px; align-items: center; border: 0; border-radius: 10px; color: var(--text-main); background: transparent; font-weight: 600; font-size: 13px; }
 .game-content { width: min(720px, calc(100% - 32px)); margin: auto; text-align: center; padding: 48px 0 42px; }
 
 /* Phase Icon (Glowy Modern) */
@@ -566,3 +566,6 @@ h1 em { font-weight: 800; color: var(--accent-gold); font-style: normal; }
 @media (prefers-reduced-motion: reduce) and (max-width: 760px) {
   .night-map-panel .chorus-seat.awake, .intro-map .chorus-seat.awake { transform: none; }
 }
+
+/* Distintivo del Alguacil en el coro */
+.seat-badge { position: absolute; top: -7px; right: -7px; width: 20px; height: 20px; display: grid; place-items: center; color: var(--on-accent); border-radius: 50%; background: var(--accent-gold); box-shadow: 0 0 0 2px var(--bg-app); }

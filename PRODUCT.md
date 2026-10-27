@@ -36,7 +36,8 @@ No reparte cartas ni sustituye a las cartas físicas: los jugadores reciben sus 
 - Biblioteca de jugadores habituales, orden de asientos, historial de mesas anteriores y mazo recomendado editable.
 - Ubicación de cartas durante la primera noche, orden de llamada, acciones nocturnas, votaciones, desempates y condiciones de victoria de los 31 personajes.
 - Deshacer paso a paso durante la partida, en memoria (se pierde al recargar).
-- No implementados: el Alguacil, los edificios de La Aldea y los personajes de Luna Nueva (Gitana y Guardia).
+- Alguacil opcional en cada partida: se elige de día, la app recuerda que su voto cuenta doble y pide sucesor cuando muere.
+- No implementados: los edificios de La Aldea y Luna Nueva (cartas de evento, variantes, Gitana y Guardia).
 - Las reglas están cubiertas por pruebas automáticas (`npm test`) que la publicación exige pasar.
 - Distribución sin decidir: gratuita o de pago depende de cómo se resuelvan los derechos (confirmado).
 
