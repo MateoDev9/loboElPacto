@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { activateWithFounderCode, isAuthenticPlayReceipt, isProRole } from './billing'
 import {
-  advanceRoleCall, applyActorChoice, applyThiefChoice, assignRoleOwners, beginScapegoatTie, canElectSheriff, createGame, determineWinner, eliminateByVote,
+  advanceRoleCall, applyActorChoice, applyApothecaryRestore, applyBarberCut, applyMayorAssign, applyThiefChoice, assignRoleOwners, beginScapegoatTie, canElectSheriff, createGame, determineWinner, eliminateByVote,
   electSheriff, prepareNextNight, resolveHunterShot, resolveNight, resolveScapegoat, resolveServantChoice, resolveSheriffSuccession, revealCard, unrevealedCards,
 } from './game'
 import { HOUSE_RULES, OFFICIAL_RULES } from './roles'
@@ -287,5 +287,92 @@ describe('Grimorio PRO y protección antifraude', () => {
   it('valida criptográficamente el código de fundador por SHA-256', async () => {
     expect(await activateWithFounderCode('CODIGO-FALSO')).toBe(false)
     expect(await activateWithFounderCode('WOLVES-FUNDADOR-2026')).toBe(true)
+  })
+})
+
+describe('expansión Edificaciones (Los edificios de La Aldea)', () => {
+  it('el Tabernero no puede ser devorado por los lobos y el Pirómano convierte a su objetivo en Vagabundo', () => {
+    const base = dealt(['werewolf', 'villager', 'pyromaniac', 'villager', 'villager'])
+    const game: GameState = {
+      ...base,
+      buildingsEnabled: true,
+      players: [
+        { ...base.players[0], buildingId: 'farmer' },
+        { ...base.players[1], buildingId: 'innkeeper' },
+        { ...base.players[2], buildingId: 'farmer' },
+        { ...base.players[3], buildingId: 'barber' },
+        { ...base.players[4], buildingId: 'noble' },
+      ],
+    }
+    const res = resolveNight(withNight(game, { wolfTargetId: id(game, 1), pyromaniacTargetId: id(game, 3) }))
+    expect(alive(res, 1)).toBe(true)
+    expect(res.players[3].buildingId).toBe('vagrant')
+  })
+
+  it('el Barbero sobrevive si degüella a un Hombre Lobo, pero muere también si degüella a un aldeano', () => {
+    const base = dealt(['werewolf', 'villager', 'villager', 'villager', 'werewolf'])
+    const game: GameState = {
+      ...base,
+      buildingsEnabled: true,
+      phase: 'day-discussion',
+      players: [
+        { ...base.players[0], buildingId: 'farmer' },
+        { ...base.players[1], buildingId: 'barber' },
+        { ...base.players[2], buildingId: 'farmer' },
+        { ...base.players[3], buildingId: 'noble' },
+        { ...base.players[4], buildingId: 'farmer' },
+      ],
+    }
+    const killWolf = applyBarberCut(game, id(game, 0))
+    expect(killWolf.players[0].alive).toBe(false)
+    expect(killWolf.players[1].alive).toBe(true)
+    expect(killWolf.players[1].buildingUsed).toBe(true)
+
+    const killVillager = applyBarberCut(game, id(game, 2))
+    expect(killVillager.players[2].alive).toBe(false)
+    expect(killVillager.players[1].alive).toBe(false)
+  })
+
+  it('el Noble indulta al condenado en la votación y el Boticario puede restaurar su poder', () => {
+    const base = dealt(['werewolf', 'villager', 'villager', 'villager'])
+    const game: GameState = {
+      ...base,
+      buildingsEnabled: true,
+      phase: 'day-vote',
+      noblePardonRequested: true,
+      players: [
+        { ...base.players[0], buildingId: 'farmer' },
+        { ...base.players[1], buildingId: 'noble' },
+        { ...base.players[2], buildingId: 'apothecary' },
+        { ...base.players[3], buildingId: 'farmer' },
+      ],
+    }
+    const afterVote = eliminateByVote(game, id(game, 3))
+    expect(afterVote.players[3].alive).toBe(true)
+    expect(afterVote.players[1].buildingUsed).toBe(true)
+
+    const restored = applyApothecaryRestore(afterVote, id(afterVote, 1))
+    expect(restored.players[1].buildingUsed).toBe(false)
+    expect(restored.players[2].buildingUsed).toBe(true)
+  })
+
+  it('al morir un propietario, su edificio queda vacante y el Alcalde puede entregárselo a un Vagabundo', () => {
+    const base = dealt(['werewolf', 'villager', 'villager', 'villager'])
+    const game: GameState = {
+      ...base,
+      buildingsEnabled: true,
+      players: [
+        { ...base.players[0], buildingId: 'farmer' },
+        { ...base.players[1], buildingId: 'mayor' },
+        { ...base.players[2], buildingId: 'noble', buildingUsed: true },
+        { ...base.players[3], buildingId: 'vagrant' },
+      ],
+    }
+    const morning = resolveNight(withNight(game, { wolfTargetId: id(game, 2) }))
+    expect(morning.vacantBuildings).toContain('noble')
+    const assigned = applyMayorAssign(morning, id(morning, 3), 'noble')
+    expect(assigned.players[3].buildingId).toBe('noble')
+    expect(assigned.players[3].buildingUsed).toBe(false)
+    expect(assigned.vacantBuildings).not.toContain('noble')
   })
 })

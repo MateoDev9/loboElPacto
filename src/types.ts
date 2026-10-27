@@ -6,6 +6,20 @@ export type RoleId =
   | 'rusty_knight' | 'thief' | 'devoted_servant' | 'actor' | 'wild_child'
   | 'wolf_hound' | 'flutist' | 'sectarian' | 'angel' | 'pyromaniac' | 'raven'
 
+export type BuildingId =
+  | 'farmer' | 'confessor' | 'apothecary' | 'headmistress' | 'baker'
+  | 'barber' | 'innkeeper' | 'mayor' | 'noble' | 'vagrant'
+
+export interface BuildingDefinition {
+  id: BuildingId
+  name: string
+  buildingName: string
+  icon: string
+  maxCount: number
+  uniquePower?: boolean
+  description: string
+}
+
 export type RoleCategory = 'wolves' | 'village' | 'ambiguous' | 'solitary' | 'village-expansion'
 export type Team = 'village' | 'wolves' | 'neutral' | 'variable'
 export type CallKind =
@@ -42,14 +56,22 @@ export interface GameRules {
   hunterAlwaysShoots: boolean
 }
 
-export interface Player { id: string; name: string; roleId?: RoleId; alive: boolean }
+export interface Player {
+  id: string
+  name: string
+  roleId?: RoleId
+  buildingId?: BuildingId
+  buildingUsed?: boolean
+  alive: boolean
+}
+
 export type SetupStep = 'players' | 'roles'
 export type GamePhase =
-  | 'night-intro' | 'role-call' | 'night-result' | 'day-discussion' | 'day-vote'
+  | 'buildings-setup' | 'night-intro' | 'role-call' | 'night-result' | 'day-discussion' | 'day-vote'
   | 'hunter-action' | 'sheriff-action' | 'servant-action' | 'scapegoat-action' | 'game-over'
 export type Winner = 'village' | 'wolves' | 'angel' | 'flutist' | 'albino_wolf' | 'sectarian' | 'lovers' | 'nobody'
-export type DeathCause = 'wolves' | 'fierce-wolf' | 'albino-wolf' | 'witch' | 'vote' | 'scapegoat' | 'hunter' | 'love' | 'rusty-sickness' | 'little-girl' | 'fire'
-export type PostDeathAction = 'night-result' | 'next-night' | 'second-vote'
+export type DeathCause = 'wolves' | 'fierce-wolf' | 'albino-wolf' | 'witch' | 'vote' | 'scapegoat' | 'hunter' | 'love' | 'rusty-sickness' | 'little-girl' | 'fire' | 'barber'
+export type PostDeathAction = 'night-result' | 'next-night' | 'second-vote' | 'stay-day'
 
 export interface NightActions {
   targets: Partial<Record<RoleId, string[]>>
@@ -71,6 +93,11 @@ export interface GameState {
   players: Player[]
   deck: RoleId[]
   rules?: GameRules
+  buildingsEnabled?: boolean
+  vacantBuildings?: BuildingId[]
+  headmistressMutedIds?: string[]
+  noblePardonRequested?: boolean
+  innkeeperLostImmunity?: boolean
   roleChoices: Partial<Record<RoleId, string>>
   round: number
   openingDay: boolean
