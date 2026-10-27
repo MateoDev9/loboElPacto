@@ -602,7 +602,7 @@ function RoleDrawer({ game, onClose }: { game: GameState; onClose: () => void })
 function RoleArtwork({ roleId, className = '' }: { roleId?: RoleId; className?: string }) {
   const role = roleId ? ROLES[roleId] : undefined
   const cardId = role?.id === 'pure_villager' ? 'villager' : role?.id
-  const cardUrl = cardId ? `${import.meta.env.BASE_URL}cards/${cardId}.webp?v=3` : undefined
+  const cardUrl = cardId ? `${import.meta.env.BASE_URL}cards/${cardId}.webp?v=4` : undefined
   const variantClass = role?.id === 'pure_villager' ? 'pure-variant' : ''
   return <span className={`role-artwork ${variantClass} ${className}`.trim()}>{role ? <><span aria-hidden="true" className="role-fallback-glyph">{role.shortName[0]}</span><img src={cardUrl} alt={`Carta de ${role.name}`} onError={(event) => { event.currentTarget.hidden = true }} /></> : <Moon size={16} aria-hidden="true" />}</span>
 }
