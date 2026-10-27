@@ -1,7 +1,7 @@
 import type { RoleId } from './types'
 
 export const PLAY_PRODUCT_ID = 'grimorio_completo_pro'
-export const PRO_PRICE_LABEL = '2,99 €'
+export const PRO_PRICE_LABEL = '3,99 €'
 
 /**
  * Los 7 roles clásicos incluidos gratis para cualquier mesa (coinciden con el mazo recomendado).
