@@ -47,7 +47,15 @@ export interface RoleDefinition {
   everyOtherNight?: boolean
   callKind?: CallKind
   passive?: boolean
+  /** Reglas ampliadas que se muestran en la ficha detallada de la carta */
+  details?: string[]
+  /** Solo puede jugarse si la partida usa Edificaciones */
+  requiresBuildings?: boolean
+  /** Marcador físico que acompaña a la carta en la caja */
+  marker?: MarkerId
 }
+
+export type MarkerId = 'fire' | 'raven' | 'sheriff' | 'guard'
 
 export interface GameRules {
   /** El Alguacil solo desempata en caso de empate (regla de la casa) en vez de tener voto doble siempre */

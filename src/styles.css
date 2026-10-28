@@ -561,6 +561,15 @@ h1 em {
 .catalog-card strong, .catalog-card small { display: block; }
 .catalog-card strong { font-size: 14.5px; font-weight: 650; }
 .catalog-card small { margin-top: 4px; color: var(--text-muted); font-size: 11.5px; line-height: 1.4; }
+.catalog-card-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.clickable {
+  cursor: pointer;
+}
 
 /* Marco de ilustración de carta (Tarot Line Art) */
 .role-artwork {
@@ -2304,6 +2313,23 @@ h1 em {
   color: var(--accent-gold);
   border-color: var(--accent-gold);
 }
+.phase-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.phase-icon.clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.phase-icon.clickable:hover {
+  transform: scale(1.05);
+  filter: brightness(1.15);
+}
+.phase-info-btn {
+  width: 32px;
+  height: 32px;
+}
 
 /* Modal de ficha detallada de Edificio */
 .role-modal-backdrop {
@@ -2350,6 +2376,92 @@ h1 em {
   background: var(--accent-gold-bg);
   color: var(--accent-gold);
   border: 1px solid var(--border-gold);
+}
+.role-team-pill.team-wolves {
+  background: rgba(184, 51, 42, 0.16);
+  color: #e06d63;
+  border-color: rgba(184, 51, 42, 0.4);
+}
+.role-team-pill.team-village {
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold);
+  border-color: var(--border-gold);
+}
+.role-team-pill.team-neutral {
+  background: rgba(138, 126, 179, 0.16);
+  color: #b5a8d9;
+  border-color: rgba(138, 126, 179, 0.4);
+}
+.marker-artwork {
+  display: inline-grid;
+  place-items: center;
+  background: #181310;
+  border-radius: 12px;
+  border: 1px solid var(--border-gold);
+}
+.marker-artwork svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.role-modal-marker {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(227, 195, 131, 0.05);
+  border: 1px dashed var(--border-gold);
+  margin-bottom: 14px;
+}
+.role-modal-marker .marker-artwork {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+.role-modal-marker small {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--accent-gold);
+  margin-bottom: 2px;
+}
+.role-modal-marker strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+.role-modal-marker p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.role-modal-prompt {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border-left: 3px solid var(--accent-gold);
+  margin-bottom: 14px;
+}
+.role-modal-prompt small {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--accent-gold);
+  margin-bottom: 3px;
+}
+.role-modal-prompt p {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-main);
+  line-height: 1.45;
 }
 .role-modal-body h3 {
   font-family: var(--font-display);

@@ -1,7 +1,88 @@
 import { useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { Moon, X } from 'lucide-react'
 import { BUILDINGS } from './buildings'
-import type { BuildingDefinition, BuildingId } from './types'
+import { ROLES } from './roles'
+import type { BuildingDefinition, BuildingId, MarkerId, RoleDefinition, RoleId } from './types'
+
+export const MARKERS: Record<MarkerId, { name: string; owner: string; description: string }> = {
+  fire: { name: 'Marcador de Fuego', owner: 'Pirómano', description: 'Se coloca sobre el edificio que el Pirómano incendia. A la mañana siguiente el edificio se retira del juego.' },
+  raven: { name: 'Marcador de Cuervo (nota anónima)', owner: 'Cuervo', description: 'Se coloca sobre el edificio del sospechoso. Ese jugador empieza la siguiente votación con 2 votos en contra.' },
+  sheriff: { name: 'Marcador de Alguacil', owner: 'Alguacil', description: 'Lo lleva delante quien ostenta el cargo de Alguacil. Si muere, lo entrega a su sucesor.' },
+  guard: { name: 'Ficha del Guardia', owner: 'El Guardia (Luna Nueva)', description: 'El Alguacil nombra a un Guardia en la aldea para tocar el tambor e imponer el silencio matutino para leer los eventos de Luna Nueva.' },
+}
+
+/** Marcadores romboidales y fichas de la caja (Fuego, Cuervo, Alguacil y Guardia) con el mismo estilo de grabado */
+export function MarkerArtwork({ marker, className = '' }: { marker: MarkerId; className?: string }) {
+  return (
+    <span className={`role-artwork marker-artwork ${className}`.trim()} role="img" aria-label={MARKERS[marker].name}>
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="100" height="100" rx="14" fill="#181310" />
+        <path d="M50 8L92 50L50 92L8 50Z" fill="#221a15" stroke="#e3c383" strokeWidth="2.2" strokeLinejoin="round" />
+        <path d="M50 15L85 50L50 85L15 50Z" stroke="#e3c383" strokeOpacity="0.35" strokeWidth="1.1" strokeLinejoin="round" />
+        {marker === 'fire' && (
+          <g strokeLinecap="round" strokeLinejoin="round">
+            <path d="M50 26C55 36 66 42 66 56C66 66 59 73 50 73C41 73 34 66 34 56C34 48 39 43 42 38C43 45 46 48 49 49C47 41 47 33 50 26Z" fill="#c84b3b" fillOpacity="0.55" stroke="#e3c383" strokeWidth="2.4" />
+            <path d="M50 49C53 54 58 57 58 63C58 68 54 71 50 71C46 71 42 68 42 63C42 59 45 57 46 54C47 57 48 58 50 58C49 55 49 52 50 49Z" fill="#e3c383" fillOpacity="0.8" />
+            <path d="M28 45L31 48M72 45L69 48M30 60L26 61M70 60L74 61" stroke="#e3c383" strokeWidth="1.8" />
+          </g>
+        )}
+        {marker === 'raven' && (
+          <g strokeLinecap="round" strokeLinejoin="round">
+            <path d="M36 34H62L66 38V68H36V34Z" fill="#181310" stroke="#e3c383" strokeWidth="2.2" />
+            <path d="M41 44H60M41 51H60M41 58H54" stroke="#e3c383" strokeOpacity="0.55" strokeWidth="1.6" />
+            <path d="M30 74L66 30" stroke="#c84b3b" strokeWidth="2.8" />
+            <path d="M66 30C72 26 76 28 74 34C70 38 64 40 58 40L66 30Z" fill="#c84b3b" fillOpacity="0.6" stroke="#e3c383" strokeWidth="1.8" />
+            <circle cx="50" cy="26" r="2.6" fill="#e3c383" />
+            <circle cx="50" cy="74" r="2.6" fill="#e3c383" />
+          </g>
+        )}
+        {marker === 'sheriff' && (
+          <g strokeLinecap="round" strokeLinejoin="round">
+            <path d="M40 24H60L56 42H44L40 24Z" fill="#c84b3b" fillOpacity="0.55" stroke="#e3c383" strokeWidth="2" />
+            <path d="M50 24V42" stroke="#e3c383" strokeOpacity="0.5" strokeWidth="1.5" />
+            <circle cx="50" cy="57" r="15" fill="#181310" stroke="#e3c383" strokeWidth="2.4" />
+            <path d="M50 46L53 53.5L61 54L55 59L57 67L50 62.5L43 67L45 59L39 54L47 53.5L50 46Z" fill="#e3c383" fillOpacity="0.85" />
+          </g>
+        )}
+        {marker === 'guard' && (
+          <g strokeLinecap="round" strokeLinejoin="round">
+            <path d="M30 36C30 36 50 30 70 36V56C70 68 50 78 50 78C50 78 30 68 30 56V36Z" fill="#20344d" fillOpacity="0.55" stroke="#e3c383" strokeWidth="2" />
+            <ellipse cx="50" cy="48" rx="14" ry="5" fill="#181310" stroke="#e3c383" strokeWidth="1.8" />
+            <path d="M36 48V60C36 63 42 66 50 66C58 66 64 63 64 60V48" fill="#181310" stroke="#e3c383" strokeWidth="1.8" />
+            <path d="M40 50L45 64M50 53V66M60 50L55 64" stroke="#e3c383" strokeOpacity="0.6" strokeWidth="1.3" />
+            <path d="M32 36L68 64M68 36L32 64" stroke="#e3c383" strokeWidth="1.8" strokeLinecap="round" />
+            <circle cx="32" cy="36" r="2.2" fill="#e3c383" />
+            <circle cx="68" cy="36" r="2.2" fill="#e3c383" />
+          </g>
+        )}
+      </svg>
+    </span>
+  )
+}
+
+export function RoleArtwork({ roleId, className = '', onClick }: { roleId?: RoleId; className?: string; onClick?: () => void }) {
+  const role = roleId ? ROLES[roleId] : undefined
+  const cardId = role?.id === 'pure_villager' ? 'villager' : role?.id
+  const cardUrl = cardId ? `${import.meta.env.BASE_URL}cards/${cardId}.webp?v=6` : undefined
+  const variantClass = role?.id === 'pure_villager' ? 'pure-variant' : ''
+  return (
+    <span
+      className={`role-artwork ${variantClass} ${className}`.trim()}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
+      {role ? (
+        <>
+          <span aria-hidden="true" className="role-fallback-glyph">{role.shortName[0]}</span>
+          <img src={cardUrl} alt={`Carta de ${role.name}`} onError={(event) => { event.currentTarget.hidden = true }} />
+        </>
+      ) : (
+        <Moon size={16} aria-hidden="true" />
+      )}
+    </span>
+  )
+}
 
 export function BuildingArtwork({ buildingId, className = '' }: { buildingId?: BuildingId; className?: string }) {
   const id = buildingId ?? 'vagrant'
@@ -212,6 +293,80 @@ export function BuildingInfoModal({ building, onClose }: { building: BuildingDef
                 ))}
               </ul>
             </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+export function RoleInfoModal({ role, onClose }: { role: RoleDefinition; onClose: () => void }) {
+  const closeRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    closeRef.current?.focus()
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('keydown', onKey); opener?.focus() }
+  }, [onClose])
+
+  const teamLabel = role.team === 'wolves'
+    ? 'Bando de los Hombres Lobo'
+    : role.team === 'village'
+      ? 'Bando de la Aldea'
+      : 'Bando Solitario / Neutral'
+
+  const teamClass = `team-${role.team}`
+
+  return (
+    <div className="drawer-backdrop role-modal-backdrop" onClick={onClose}>
+      <aside className="role-modal" role="dialog" aria-modal="true" aria-labelledby="role-modal-title" onClick={(event) => event.stopPropagation()}>
+        <button ref={closeRef} type="button" className="icon-button role-modal-close" onClick={onClose} aria-label="Cerrar"><X size={19} /></button>
+        <div className="role-modal-card-frame">
+          <RoleArtwork roleId={role.id} className="role-modal-art" />
+        </div>
+        <div className="role-modal-body">
+          <span className={`role-team-pill ${teamClass}`}>{teamLabel}</span>
+          <h3 id="role-modal-title">{role.name}</h3>
+          <p className="role-modal-description">{role.description}</p>
+
+          {role.spokenPrompt && (
+            <div className="role-modal-prompt">
+              <small>Llamada del narrador</small>
+              <p>{role.spokenPrompt}</p>
+            </div>
+          )}
+
+          {role.marker && MARKERS[role.marker] && (
+            <div className="role-modal-marker">
+              <MarkerArtwork marker={role.marker} />
+              <div>
+                <small>Ficha física incluida en la caja</small>
+                <strong>{MARKERS[role.marker].name}</strong>
+                <p>{MARKERS[role.marker].description}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="role-modal-meta">
+            <div>
+              <small>Composición y llamada</small>
+              <p>
+                {role.maxCards === 1 ? '1 carta única en la caja' : `Hasta ${role.maxCards} cartas en la caja`}
+                {role.nightOrder !== undefined ? ` · Llamada nocturna #${role.nightOrder}` : ' · No actúa durante la noche'}
+                {role.requiresBuildings ? ' · Requiere jugar con Edificaciones' : ''}
+              </p>
+            </div>
+            {role.details && role.details.length > 0 && (
+              <div>
+                <small>Reglas y funcionamiento detallado</small>
+                <ul className="building-rules-list">
+                  {role.details.map((rule, idx) => (
+                    <li key={idx}>{rule}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </aside>

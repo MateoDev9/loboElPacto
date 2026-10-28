@@ -8,7 +8,7 @@ import {
 import {
   activateWithFounderCode, isProRole, PRO_PRICE_LABEL, purchaseGrimorioPro, restoreGrimorioPurchase, verifyStoredEntitlement,
 } from './billing'
-import { BuildingArtwork, BuildingInfoModal } from './BuildingArtwork'
+import { BuildingArtwork, BuildingInfoModal, RoleArtwork, RoleInfoModal } from './BuildingArtwork'
 import { BUILDING_LIST, BUILDINGS, recommendedBuildings } from './buildings'
 import {
   advanceRoleCall, alivePlayers, aliveWolves, applyActorChoice, applyApothecaryRestore, applyBarberCut, applyConfessorPower,
@@ -18,7 +18,7 @@ import {
 } from './game'
 import { CATEGORY_LABELS, HOUSE_RULES, isActorCandidate, isWolfRole, OFFICIAL_RULES, recommendedRoles, ROLE_LIST, ROLES } from './roles'
 import { clearGame, loadGame, loadHistory, loadLastGroups, loadPeople, loadRules, saveGame, saveHistory, saveLastGroups, savePeople, saveRules } from './storage'
-import type { BuildingDefinition, BuildingId, GameRules, GameState, Player, RoleCategory, RoleId, SetupStep, Winner } from './types'
+import type { BuildingDefinition, BuildingId, GameRules, GameState, Player, RoleCategory, RoleDefinition, RoleId, SetupStep, Winner } from './types'
 
 type Screen = 'home' | 'library' | 'setup' | 'game'
 
@@ -288,6 +288,7 @@ function DeckSetup({
   onNext: () => void
 }) {
   const [customizeRules, setCustomizeRules] = useState(false)
+  const [inspectRole, setInspectRole] = useState<RoleDefinition | null>(null)
   const [inspectBuilding, setInspectBuilding] = useState<BuildingDefinition | null>(null)
   const counts = countRoles(deck)
   const categories: RoleCategory[] = ['wolves', 'village', 'ambiguous', 'solitary', 'village-expansion']
@@ -345,8 +346,36 @@ function DeckSetup({
         const description = item.id === 'two_sisters'
           ? (rules.sistersEveryNight ? 'Se reconocen cada noche antes de los Lobos.' : 'Se reconocen la primera noche.')
           : item.description
-        return <article className={`catalog-card ${count ? 'chosen' : ''} ${locked ? 'locked-role' : ''}`.trim()} key={item.id} style={{ '--role-color': item.color } as React.CSSProperties} onClick={locked ? onOpenPaywall : undefined}>
-          <RoleArtwork roleId={item.id} className="role-icon" /><div><strong>{item.name} {locked && <span className="pro-tag"><Lock size={11} /> PRO</span>}</strong><small>{description}{item.id === 'two_sisters' ? ' Se añaden las 2 cartas.' : item.id === 'three_brothers' ? ' Se añaden las 3 cartas.' : ''}</small></div>{locked ? <div className="counter locked-counter"><button type="button" className="unlock-role-btn" onClick={(e) => { e.stopPropagation(); onOpenPaywall() }} aria-label={`Desbloquear ${item.name} con Grimorio PRO`}><Lock size={16} /></button></div> : <div className="counter"><button disabled={!count} onClick={() => changeCount(item.id, -1)} aria-label={`Quitar ${item.name}`}><CircleMinus size={20} /></button><b>{count}</b><button disabled={count >= item.maxCards || deck.length + addCost(item.id) > cardTarget} onClick={() => changeCount(item.id, 1)} aria-label={`Añadir ${item.name}`}><CirclePlus size={20} /></button></div>}
+        return <article className={`catalog-card ${count ? 'chosen' : ''} ${locked ? 'locked-role' : ''}`.trim()} key={item.id} style={{ '--role-color': item.color } as React.CSSProperties}>
+          <RoleArtwork roleId={item.id} className="role-icon clickable" onClick={() => setInspectRole(item)} />
+          <div onClick={() => setInspectRole(item)} style={{ cursor: 'pointer', minWidth: 0 }}>
+            <strong>{item.name} {locked && <span className="pro-tag"><Lock size={11} /> PRO</span>}</strong>
+            <small>{description}{item.id === 'two_sisters' ? ' Se añaden las 2 cartas.' : item.id === 'three_brothers' ? ' Se añaden las 3 cartas.' : ''}</small>
+          </div>
+          <div className="catalog-card-controls">
+            <button
+              type="button"
+              className="role-info-btn"
+              onClick={(e) => { e.stopPropagation(); setInspectRole(item) }}
+              aria-label={`Reglas de ${item.name}`}
+              title={`Ver reglas y detalles de ${item.name}`}
+            >
+              <Info size={15} />
+            </button>
+            {locked ? (
+              <div className="counter locked-counter">
+                <button type="button" className="unlock-role-btn" onClick={(e) => { e.stopPropagation(); onOpenPaywall() }} aria-label={`Desbloquear ${item.name} con Grimorio PRO`}>
+                  <Lock size={16} />
+                </button>
+              </div>
+            ) : (
+              <div className="counter">
+                <button disabled={!count} onClick={() => changeCount(item.id, -1)} aria-label={`Quitar ${item.name}`}><CircleMinus size={20} /></button>
+                <b>{count}</b>
+                <button disabled={count >= item.maxCards || deck.length + addCost(item.id) > cardTarget} onClick={() => changeCount(item.id, 1)} aria-label={`Añadir ${item.name}`}><CirclePlus size={20} /></button>
+              </div>
+            )}
+          </div>
         </article>
       })}
     </div></section>)}
@@ -457,6 +486,7 @@ function DeckSetup({
         </div>
       )}
     </section>
+    {inspectRole && <RoleInfoModal role={inspectRole} onClose={() => setInspectRole(null)} />}
     {inspectBuilding && <BuildingInfoModal building={inspectBuilding} onClose={() => setInspectBuilding(null)} />}
     {!actorReady && <p className="form-error">Elige las 3 cartas del Comediante.</p>}
     <div className="sticky-action"><span>{deck.length === cardTarget ? (counts.thief ? 'El mazo está listo. Reparte una carta a cada persona y deja 2 boca abajo en el centro.' : 'El mazo está listo. Baraja y reparte las cartas.') : `${Math.abs(cardTarget - deck.length)} cartas ${deck.length < cardTarget ? 'por añadir' : 'de más'}`}</span><button className="button button-primary" disabled={!valid} onClick={onNext}>{useBuildings ? 'Repartir edificaciones' : deck.includes('angel') ? 'Empezar el día del Ángel' : 'Empezar primera noche'} <ArrowRight size={18} /></button></div>
@@ -631,6 +661,7 @@ function ProPaywallModal({ onClose, onUnlocked }: { onClose: () => void; onUnloc
 function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onExit, onEnd }: { game: GameState; setGame: (game: GameState) => void; canUndo: boolean; onUndo: () => void; isPro: boolean; onOpenPaywall: () => void; onExit: () => void; onEnd: () => void }) {
   const [showRoles, setShowRoles] = useState(false)
   const [showChorus, setShowChorus] = useState(true)
+  const [inspectRole, setInspectRole] = useState<RoleDefinition | null>(null)
   const alive = alivePlayers(game)
   const seatNumbers = useMemo(() => Object.fromEntries(game.players.map((player, index) => [player.id, index + 1])), [game.players])
   const closeRoles = useMemo(() => () => setShowRoles(false), [])
@@ -638,6 +669,12 @@ function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onEx
   const selectedName = (id?: string) => game.players.find((player) => player.id === id)?.name
   const currentRoleId = game.phase === 'role-call' ? game.nightSequence[game.sequenceIndex] : undefined
   const currentRole = currentRoleId ? ROLES[currentRoleId] : undefined
+  const activePhaseRole = currentRole
+    ?? (game.phase === 'hunter-action' ? ROLES.hunter
+    : game.phase === 'servant-action' ? ROLES.devoted_servant
+    : game.phase === 'scapegoat-action' ? ROLES.scapegoat
+    : (game.phase === 'night-intro' && game.openingDay) ? ROLES.angel
+    : undefined)
   // El Comediante vuelve a despertar en el turno del personaje cuya carta ha elegido
   const actingAsActor = Boolean(currentRoleId && currentRoleId !== 'actor' && currentRoleId === game.night.actorRoleId)
   const assignedOwners = currentRoleId ? alive.filter((player) => player.roleId === (actingAsActor ? 'actor' : currentRoleId)) : []
@@ -761,7 +798,36 @@ function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onEx
 
   return <SeatContext.Provider value={seatNumbers}><main className={`game-shell ${isDay ? 'day' : ''}`}><header className="game-header"><button className="icon-button" onClick={onExit} aria-label="Volver al inicio"><ArrowLeft size={20} /></button><div><span className="round-dot" /> {isDay ? 'Día' : 'Noche'} {game.round}</div><div className="header-actions"><button className="icon-button" onClick={onUndo} disabled={!canUndo} aria-label="Deshacer" title="Deshacer el último paso"><Undo2 size={19} /></button><button className="roles-button" onClick={() => setShowRoles(!showRoles)} aria-expanded={showRoles}><Eye size={17} /> {showRoles ? 'Ocultar' : 'Ver roles'}</button></div></header>
     {showRoles && <RoleDrawer game={game} onClose={closeRoles} />}
-    <section className="game-content"><div className="turn-heading"><div className="phase-icon">{phase.icon}</div><div><span className="phase-progress">{phase.kicker}</span><h2>{phase.title}</h2><p className="phase-copy">{phase.text}</p></div></div>
+    {inspectRole && <RoleInfoModal role={inspectRole} onClose={() => setInspectRole(null)} />}
+    <section className="game-content"><div className="turn-heading">
+      <div
+        className={`phase-icon ${activePhaseRole ? 'clickable' : ''}`}
+        onClick={activePhaseRole ? () => setInspectRole(activePhaseRole) : undefined}
+        title={activePhaseRole ? `Ver reglas de ${activePhaseRole.name}` : undefined}
+        role={activePhaseRole ? 'button' : undefined}
+        tabIndex={activePhaseRole ? 0 : undefined}
+      >
+        {phase.icon}
+      </div>
+      <div>
+        <span className="phase-progress">{phase.kicker}</span>
+        <div className="phase-title-row">
+          <h2>{phase.title}</h2>
+          {activePhaseRole && (
+            <button
+              type="button"
+              className="role-info-btn phase-info-btn"
+              onClick={() => setInspectRole(activePhaseRole)}
+              aria-label={`Reglas de ${activePhaseRole.name}`}
+              title={`Ver reglas y detalles de ${activePhaseRole.name}`}
+            >
+              <Info size={16} />
+            </button>
+          )}
+        </div>
+        <p className="phase-copy">{phase.text}</p>
+      </div>
+    </div>
       {game.phase !== 'role-call' && phase.spoken && <SpokenPrompt text={phase.spoken} />}
       {game.phase === 'buildings-setup' && <BuildingsSetupPhase game={game} setGame={setGame} />}
       {game.phase === 'role-call' && <>
@@ -1600,6 +1666,7 @@ function PlayerPicker({ players, selected, onSelect, label, compact = false }: {
 
 function RoleDrawer({ game, onClose }: { game: GameState; onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null)
+  const [inspectRole, setInspectRole] = useState<RoleDefinition | null>(null)
   const [inspectBuilding, setInspectBuilding] = useState<BuildingDefinition | null>(null)
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
@@ -1609,6 +1676,7 @@ function RoleDrawer({ game, onClose }: { game: GameState; onClose: () => void })
     return () => { document.removeEventListener('keydown', onKey); opener?.focus() }
   }, [onClose])
   return <div className="drawer-backdrop" onClick={onClose}><aside className="role-drawer" role="dialog" aria-modal="true" aria-labelledby="role-drawer-title" onClick={(event) => event.stopPropagation()}>
+    {inspectRole && <RoleInfoModal role={inspectRole} onClose={() => setInspectRole(null)} />}
     {inspectBuilding && <BuildingInfoModal building={inspectBuilding} onClose={() => setInspectBuilding(null)} />}
     <div className="drawer-head"><div><h3 id="role-drawer-title">Cartas y estados</h3><small className="drawer-subtitle">Información secreta del narrador</small></div><button ref={closeRef} className="icon-button" onClick={onClose} aria-label="Cerrar"><X size={19} /></button></div>
     <div className="drawer-list">{game.players.map((player) => {
@@ -1617,7 +1685,19 @@ function RoleDrawer({ game, onClose }: { game: GameState; onClose: () => void })
       const states = [bLabel, player.id === game.sheriffId ? 'Alguacil' : '', game.infectedIds.includes(player.id) ? 'Infectado' : '', game.charmedIds.includes(player.id) ? 'Hechizado' : '', game.lovers.includes(player.id) ? 'Enamorado' : '', player.id === game.mentorId ? 'Modelo' : ''].filter(Boolean)
       return <div className={`drawer-player ${!player.alive ? 'dead' : ''}`} key={player.id}>
         <div className="drawer-player-icons">
-          <RoleArtwork roleId={player.roleId} className="role-icon small" />
+          {player.roleId ? (
+            <button
+              type="button"
+              className="drawer-building-btn"
+              onClick={() => setInspectRole(ROLES[player.roleId!])}
+              title={`Ver reglas de ${ROLES[player.roleId].name}`}
+              aria-label={`Ver reglas de ${ROLES[player.roleId].name}`}
+            >
+              <RoleArtwork roleId={player.roleId} className="role-icon small" />
+            </button>
+          ) : (
+            <RoleArtwork className="role-icon small" />
+          )}
           {bDef && (
             <button type="button" className="drawer-building-btn" onClick={() => setInspectBuilding(bDef)} title={`Ver reglas de ${bDef.name}`}>
               <BuildingArtwork buildingId={bDef.id} className="role-icon tiny" />
@@ -1630,14 +1710,6 @@ function RoleDrawer({ game, onClose }: { game: GameState; onClose: () => void })
     })}</div>
     <button className="button button-primary" onClick={onClose}><Eye size={17} /> Cerrar</button>
   </aside></div>
-}
-
-function RoleArtwork({ roleId, className = '' }: { roleId?: RoleId; className?: string }) {
-  const role = roleId ? ROLES[roleId] : undefined
-  const cardId = role?.id === 'pure_villager' ? 'villager' : role?.id
-  const cardUrl = cardId ? `${import.meta.env.BASE_URL}cards/${cardId}.webp?v=6` : undefined
-  const variantClass = role?.id === 'pure_villager' ? 'pure-variant' : ''
-  return <span className={`role-artwork ${variantClass} ${className}`.trim()}>{role ? <><span aria-hidden="true" className="role-fallback-glyph">{role.shortName[0]}</span><img src={cardUrl} alt={`Carta de ${role.name}`} onError={(event) => { event.currentTarget.hidden = true }} /></> : <Moon size={16} aria-hidden="true" />}</span>
 }
 
 function winnerCopy(winner?: Winner) {
