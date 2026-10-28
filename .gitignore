@@ -6,6 +6,9 @@ tmp
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+.env
+
 
 # Reglamentos de referencia para desarrollar (no se publican)
 reglas
+cartas_originales

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Wolves: El pueblo duerme</string>
+    <string name="title_activity_main">Wolves: El pueblo duerme</string>
+    <string name="package_name">com.mateodev.wolves</string>
+    <string name="custom_url_scheme">com.mateodev.wolves</string>
+</resources>

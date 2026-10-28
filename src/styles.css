@@ -2007,21 +2007,14 @@ h1 em {
   gap: 18px;
   flex-wrap: wrap;
 }
-.paywall-code-box {
-  margin-top: 14px;
-  display: grid;
-  grid-template-columns: 1fr auto;
+.paywall-note {
+  display: flex;
+  align-items: center;
   gap: 8px;
-}
-.paywall-code-box input {
-  min-height: 44px;
-  padding: 0 14px;
-  color: var(--text-main);
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
-  background: var(--bg-input);
-  font-size: 14px;
-  letter-spacing: 0;
+  margin: 16px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
 }
 .paywall-status {
   margin: 14px 0 0;

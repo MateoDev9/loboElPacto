@@ -62,9 +62,9 @@ export function MarkerArtwork({ marker, className = '' }: { marker: MarkerId; cl
 
 export function RoleArtwork({ roleId, className = '', onClick }: { roleId?: RoleId; className?: string; onClick?: () => void }) {
   const role = roleId ? ROLES[roleId] : undefined
-  const cardId = role?.id === 'pure_villager' ? 'villager' : role?.id
-  const cardUrl = cardId ? `${import.meta.env.BASE_URL}cards/${cardId}.webp?v=6` : undefined
-  const variantClass = role?.id === 'pure_villager' ? 'pure-variant' : ''
+  // Cada personaje tiene su propia carta; el Aldeano Puro ya no reutiliza la del Aldeano Común
+  const cardUrl = role ? `${import.meta.env.BASE_URL}cards/${role.id}.webp?v=7` : undefined
+  const variantClass = ''
   return (
     <span
       className={`role-artwork ${variantClass} ${className}`.trim()}

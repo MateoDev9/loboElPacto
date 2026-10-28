@@ -4,7 +4,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
   farmer: {
     id: 'farmer',
     name: 'Granjero',
-    buildingName: 'La Granja',
+    buildingName: 'Granja',
     tokenName: 'Ficha de Vaca',
     powerKind: 'permanent',
     whenToUse: 'Desde el 2.º turno (elección de Alguacil)',
@@ -20,7 +20,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
   baker: {
     id: 'baker',
     name: 'Panadero',
-    buildingName: 'La Panadería',
+    buildingName: 'Panadería',
     tokenName: 'Ficha de Pan',
     powerKind: 'permanent',
     whenToUse: 'Cada noche justo al dormirse los Lobos',
@@ -36,7 +36,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
   innkeeper: {
     id: 'innkeeper',
     name: 'Tabernero',
-    buildingName: 'La Taberna',
+    buildingName: 'Taberna',
     tokenName: 'Ficha de Copa',
     powerKind: 'permanent',
     whenToUse: 'Pasivo de noche + vota el primero de día',
@@ -53,7 +53,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
   noble: {
     id: 'noble',
     name: 'Noble',
-    buildingName: 'El Palacete',
+    buildingName: 'Palacio',
     tokenName: 'Ficha de Blasón',
     powerKind: 'unique',
     whenToUse: 'Justo después de cualquier votación',
@@ -71,7 +71,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
   barber: {
     id: 'barber',
     name: 'Barbero',
-    buildingName: 'La Barbería',
+    buildingName: 'Barbería',
     tokenName: 'Ficha de Navaja',
     powerKind: 'unique',
     whenToUse: 'En cualquier momento durante el día',
@@ -80,7 +80,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
     description: 'Una vez por partida, de día, degüella a un propietario de edificio: si no es Lobo, el Barbero también muere.',
     rules: [
       'En cualquier momento del día, el Barbero puede usar su navaja para eliminar inmediatamente al jugador que elija (nunca a un Vagabundo).',
-      'Si el jugador degollado resulta ser un Hombre Lobo (Común, Feroz, Infecto Padre, Albino, infectado o Niño Salvaje transformado), la aldea felicita al Barbero y conserva la vida.',
+      'Si el jugador degollado resulta ser un Hombre Lobo (Común, Feroz, Lobo Infectador, Albino, infectado o Niño Criado por Lobos transformado), la aldea felicita al Barbero y conserva la vida.',
       'En caso contrario, el Barbero también es ejecutado en el acto por su crimen.',
       'Si degüella al Anciano, éste muere en el primer intento (junto con el Barbero) y la aldea pierde sus poderes especiales.',
     ],
@@ -89,7 +89,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
   confessor: {
     id: 'confessor',
     name: 'Confesor',
-    buildingName: 'La Iglesia',
+    buildingName: 'Capilla',
     tokenName: 'Ficha de Rosario',
     powerKind: 'unique',
     whenToUse: 'En cualquier momento durante el día',
@@ -106,7 +106,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
   apothecary: {
     id: 'apothecary',
     name: 'Boticario',
-    buildingName: 'La Choza',
+    buildingName: 'Cabaña',
     tokenName: 'Ficha de Mortero',
     powerKind: 'unique',
     whenToUse: 'En cualquier momento durante el día',
@@ -123,7 +123,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
   headmistress: {
     id: 'headmistress',
     name: 'Institutriz',
-    buildingName: 'La Escuela',
+    buildingName: 'Escuela',
     tokenName: 'Ficha de Campana',
     powerKind: 'permanent',
     whenToUse: 'Cada día justo antes de abrir la votación',
@@ -139,7 +139,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
   mayor: {
     id: 'mayor',
     name: 'Alcalde',
-    buildingName: 'El Ayuntamiento',
+    buildingName: 'Ayuntamiento',
     tokenName: 'Ficha de Llaves',
     powerKind: 'permanent',
     whenToUse: 'Cuando queda un edificio libre tras una muerte',

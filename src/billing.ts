@@ -1,7 +1,11 @@
+import { Capacitor } from '@capacitor/core'
 import type { RoleId } from './types'
 
 export const PLAY_PRODUCT_ID = 'grimorio_completo_pro'
-export const PRO_PRICE_LABEL = '3,99 €'
+export const PRO_ENTITLEMENT = 'pro'
+// Precio de respaldo hasta que Google Play devuelve el de cada país
+export const PRO_PRICE_FALLBACK = '3,99 €'
+export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mateodev.wolves'
 
 /**
  * Los 7 roles clásicos incluidos gratis para cualquier mesa (coinciden con el mazo recomendado).
@@ -21,200 +25,112 @@ export function isProRole(roleId: RoleId): boolean {
   return !FREE_ROLES.has(roleId)
 }
 
-const ENTITLEMENT_KEY = 'wolves-grimorio-seal-v1'
-const SALT = 'wolves-grimorio-v1-salt-9f8e2a'
-// Hash SHA-256 de (SALT + ':' + código de fundador). El código nunca aparece en texto plano en el bundle.
-const FOUNDER_CODE_SHA256 = '12d60e086d674b768444dcd64f4a5141852577964d5b417dfbfa4b63cc78728e'
-
-interface StoredSeal {
-  source: 'play_billing' | 'founder_seal'
-  ref: string
-  sig: string
+// Lo mínimo del SDK de RevenueCat que usa la app; así se puede probar con un sustituto
+interface CustomerInfoLike { entitlements: { active: Record<string, unknown> } }
+interface PackageLike { product: { priceString: string } }
+export interface BillingBridge {
+  configure(options: { apiKey: string }): Promise<void>
+  getCustomerInfo(): Promise<{ customerInfo: CustomerInfoLike }>
+  getOfferings(): Promise<{ current: { lifetime: PackageLike | null } | null }>
+  purchasePackage(options: { aPackage: PackageLike }): Promise<{ customerInfo: CustomerInfoLike }>
+  restorePurchases(): Promise<{ customerInfo: CustomerInfoLike }>
+  addCustomerInfoUpdateListener(listener: (customerInfo: CustomerInfoLike) => void): Promise<unknown>
 }
 
-async function sha256Hex(message: string): Promise<string> {
-  if (typeof crypto !== 'undefined' && crypto.subtle) {
-    const data = new TextEncoder().encode(message)
-    const digest = await crypto.subtle.digest('SHA-256', data)
-    return Array.from(new Uint8Array(digest))
-      .map((byte) => byte.toString(16).padStart(2, '0'))
-      .join('')
-  }
-  return ''
-}
+export type BillingResult =
+  | { ok: true }
+  | { ok: false; cancelled?: boolean; message?: string; storeUrl?: string }
 
-function deviceFingerprint(): string {
-  const lang = typeof navigator !== 'undefined' ? (navigator.language || 'es') : 'es'
-  const w = typeof screen !== 'undefined' ? (screen.width || 0) : 0
-  const h = typeof screen !== 'undefined' ? (screen.height || 0) : 0
-  return [lang, w, h].join('|')
-}
+const WEB_MESSAGE = 'El Grimorio Completo se compra desde la app de Android en Google Play.'
 
-async function computeSealSignature(source: StoredSeal['source'], ref: string): Promise<string> {
-  return sha256Hex(`${SALT}::${source}::${ref}::${deviceFingerprint()}`)
-}
+const hasPro = (customerInfo: CustomerInfoLike) => PRO_ENTITLEMENT in customerInfo.entitlements.active
 
-async function saveVerifiedSeal(source: StoredSeal['source'], ref: string): Promise<boolean> {
-  const sig = await computeSealSignature(source, ref)
-  if (!sig) return false
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const payload: StoredSeal = { source, ref, sig }
-      localStorage.setItem(ENTITLEMENT_KEY, JSON.stringify(payload))
-    }
-  } catch {
-    // Sin localStorage disponible
-  }
-  return true
-}
+// RevenueCat marca la compra cancelada por el usuario con el código "1"
+const isCancelled = (error: unknown) => typeof error === 'object' && error !== null
+  && ((error as { code?: unknown }).code === '1' || (error as { userCancelled?: unknown }).userCancelled === true)
 
 /**
- * Comprueba que el recibo no provenga de un parcheador como Lucky Patcher o HappyMod.
- * Los emuladores piratas de facturación generan orderIds sin formato oficial GPA.XXXX-XXXX-XXXX-XXXXX
- * o firmas vacías/cortas que no corresponden a una clave RSA-2048 de Google Play.
+ * Derechos de uso del Grimorio Completo. Google Play cobra y RevenueCat valida el recibo con Google,
+ * confirma la compra y guarda el estado en caché, así que la app nunca decide por sí sola quién ha pagado.
+ * Sin puente nativo (la web) el PRO no está disponible y la compra lleva a la ficha de Google Play.
  */
-export function isAuthenticPlayReceipt(receipt: {
-  orderId?: string
-  purchaseToken?: string
-  signature?: string
-}): boolean {
-  const token = (receipt.purchaseToken ?? '').trim()
-  const orderId = (receipt.orderId ?? '').trim()
-  const signature = (receipt.signature ?? '').trim()
-
-  // Lucky Patcher suele dejar orderId vacío o con números aleatorios sin prefijo GPA.
-  if (orderId && !/^GPA\.\d{4}-\d{4}-\d{4}-\d{4,5}(\.\.\d+)?$/.test(orderId)) {
-    return false
+export function createBilling(bridge: BillingBridge | null, apiKey?: string) {
+  let ready: Promise<boolean> | undefined
+  const init = () => {
+    if (!bridge || !apiKey) return Promise.resolve(false)
+    ready ??= bridge.configure({ apiKey }).then(() => true, () => false)
+    return ready
   }
-  // Un purchaseToken legítimo de Google Play supera los 40 caracteres opacos
-  if (token.length < 32) {
-    return false
-  }
-  // Si el puente nativo adjunta la firma RSA-SHA256 de Play Billing, debe tener longitud RSA-2048 en Base64 (~344 chars)
-  if (signature && signature.length < 160) {
-    return false
-  }
-  return true
-}
 
-export async function verifyStoredEntitlement(): Promise<boolean> {
-  try {
-    const raw = localStorage.getItem(ENTITLEMENT_KEY)
-    if (!raw) return false
-    const parsed = JSON.parse(raw) as Partial<StoredSeal>
-    if (!parsed.source || !parsed.ref || !parsed.sig) return false
-    const expected = await computeSealSignature(parsed.source, parsed.ref)
-    return Boolean(expected && expected === parsed.sig)
-  } catch {
-    return false
-  }
-}
+  return {
+    available: Boolean(bridge && apiKey),
 
-export async function activateWithFounderCode(rawCode: string): Promise<boolean> {
-  const normalized = rawCode.trim().toUpperCase()
-  if (!normalized) return false
-  const digest = await sha256Hex(`${SALT}:${normalized}`)
-  if (digest !== FOUNDER_CODE_SHA256) return false
-  return saveVerifiedSeal('founder_seal', digest.slice(0, 24))
-}
-
-// Tipado opcional para puentes de Google Play Billing (Capacitor / RevenueCat / TWA Digital Goods API)
-interface NativeBillingBridge {
-  purchaseProduct?: (productId: string) => Promise<{
-    orderId?: string
-    purchaseToken?: string
-    signature?: string
-  }>
-  restorePurchases?: () => Promise<Array<{
-    productId?: string
-    orderId?: string
-    purchaseToken?: string
-    signature?: string
-  }>>
-}
-
-interface DigitalGoodsService {
-  getDetails: (itemIds: string[]) => Promise<unknown[]>
-  listPurchases: () => Promise<Array<{ itemId: string; purchaseToken: string }>>
-}
-
-declare global {
-  interface Window {
-    CapacitorBilling?: NativeBillingBridge
-    getDigitalGoodsService?: (serviceProvider: string) => Promise<DigitalGoodsService | null>
-  }
-}
-
-export async function purchaseGrimorioPro(): Promise<{ ok: boolean; message?: string }> {
-  try {
-    // 1. Puente nativo de Capacitor / RevenueCat en Android
-    if (typeof window !== 'undefined' && window.CapacitorBilling?.purchaseProduct) {
-      const receipt = await window.CapacitorBilling.purchaseProduct(PLAY_PRODUCT_ID)
-      if (!isAuthenticPlayReceipt(receipt)) {
-        return { ok: false, message: 'No se pudo verificar la firma criptográfica de Google Play.' }
+    async getProStatus(): Promise<boolean> {
+      if (!(await init())) return false
+      try {
+        return hasPro((await bridge!.getCustomerInfo()).customerInfo)
+      } catch {
+        return false
       }
-      await saveVerifiedSeal('play_billing', receipt.purchaseToken!)
-      return { ok: true }
-    }
+    },
 
-    // 2. Digital Goods API (TWA / Google Play Store Web Billing)
-    if (typeof window !== 'undefined' && window.getDigitalGoodsService) {
-      const service = await window.getDigitalGoodsService('https://play.google.com/billing')
-      if (service && typeof PaymentRequest !== 'undefined') {
-        const request = new PaymentRequest(
-          [{ supportedMethods: 'https://play.google.com/billing', data: { sku: PLAY_PRODUCT_ID } }],
-          { total: { label: 'Wolves: Grimorio Completo', amount: { currency: 'EUR', value: '2.99' } } },
-        )
-        const response = await request.show()
-        const details = response.details as { purchaseToken?: string; orderId?: string } | undefined
-        await response.complete('success')
-        if (!details || !isAuthenticPlayReceipt(details)) {
-          return { ok: false, message: 'El recibo de Google Play no es válido.' }
-        }
-        await saveVerifiedSeal('play_billing', details.purchaseToken!)
-        return { ok: true }
+    async getProPrice(): Promise<string> {
+      if (!(await init())) return PRO_PRICE_FALLBACK
+      try {
+        return (await bridge!.getOfferings()).current?.lifetime?.product.priceString ?? PRO_PRICE_FALLBACK
+      } catch {
+        return PRO_PRICE_FALLBACK
       }
-    }
+    },
 
-    return {
-      ok: false,
-      message: 'La compra directa se activa al instalar la app desde Google Play Store. Si tienes un código de acceso, introdúcelo abajo.',
-    }
-  } catch {
-    return { ok: false, message: 'La compra se ha cancelado o no se pudo completar.' }
+    async purchasePro(): Promise<BillingResult> {
+      if (!(await init())) return { ok: false, message: WEB_MESSAGE, storeUrl: PLAY_STORE_URL }
+      try {
+        const lifetime = (await bridge!.getOfferings()).current?.lifetime
+        if (!lifetime) return { ok: false, message: 'El Grimorio Completo no está disponible ahora mismo. Inténtalo más tarde.' }
+        const { customerInfo } = await bridge!.purchasePackage({ aPackage: lifetime })
+        return hasPro(customerInfo)
+          ? { ok: true }
+          : { ok: false, message: 'La compra no se ha completado. Si te han cobrado, pulsa «Restaurar compra».' }
+      } catch (error) {
+        if (isCancelled(error)) return { ok: false, cancelled: true }
+        return { ok: false, message: 'No se pudo completar la compra. Comprueba la conexión e inténtalo de nuevo.' }
+      }
+    },
+
+    async restorePro(): Promise<BillingResult> {
+      if (!(await init())) return { ok: false, message: WEB_MESSAGE, storeUrl: PLAY_STORE_URL }
+      try {
+        return hasPro((await bridge!.restorePurchases()).customerInfo)
+          ? { ok: true }
+          : { ok: false, message: 'No hay ninguna compra del Grimorio Completo en tu cuenta de Google Play.' }
+      } catch {
+        return { ok: false, message: 'No se pudo consultar tus compras. Comprueba la conexión e inténtalo de nuevo.' }
+      }
+    },
+
+    async onProChange(listener: (isPro: boolean) => void): Promise<void> {
+      if (!(await init())) return
+      try {
+        await bridge!.addCustomerInfoUpdateListener((customerInfo) => listener(hasPro(customerInfo)))
+      } catch {
+        // Sin avisos de cambios: el estado se vuelve a leer al abrir la app
+      }
+    },
   }
 }
 
-export async function restoreGrimorioPurchase(): Promise<{ ok: boolean; message: string }> {
-  try {
-    if (typeof window !== 'undefined' && window.CapacitorBilling?.restorePurchases) {
-      const purchases = await window.CapacitorBilling.restorePurchases()
-      const match = purchases.find((item) => item.productId === PLAY_PRODUCT_ID && isAuthenticPlayReceipt(item))
-      if (match?.purchaseToken) {
-        await saveVerifiedSeal('play_billing', match.purchaseToken)
-        return { ok: true, message: '¡Compra restaurada correctamente! Grimorio Completo activado.' }
-      }
-    }
+export type Billing = ReturnType<typeof createBilling>
 
-    if (typeof window !== 'undefined' && window.getDigitalGoodsService) {
-      const service = await window.getDigitalGoodsService('https://play.google.com/billing')
-      if (service) {
-        const purchases = await service.listPurchases()
-        const match = purchases.find((item) => item.itemId === PLAY_PRODUCT_ID && isAuthenticPlayReceipt(item))
-        if (match) {
-          await saveVerifiedSeal('play_billing', match.purchaseToken)
-          return { ok: true, message: '¡Compra restaurada correctamente! Grimorio Completo activado.' }
-        }
-      }
-    }
+let billing: Promise<Billing> | undefined
 
-    const alreadyActive = await verifyStoredEntitlement()
-    if (alreadyActive) {
-      return { ok: true, message: 'Tu Grimorio Completo ya está activo en este dispositivo.' }
-    }
-
-    return { ok: false, message: 'No se encontró ninguna compra previa asociada a tu cuenta de Google Play.' }
-  } catch {
-    return { ok: false, message: 'No se pudo consultar el historial de compras en este momento.' }
-  }
+export function getBilling(): Promise<Billing> {
+  billing ??= (async () => {
+    // El sello de la versión anterior se podía falsificar desde la consola: ya no da acceso
+    try { localStorage.removeItem('wolves-grimorio-seal-v1') } catch { /* Sin almacenamiento */ }
+    if (!Capacitor.isNativePlatform()) return createBilling(null)
+    const { Purchases } = await import('@revenuecat/purchases-capacitor')
+    return createBilling(Purchases as unknown as BillingBridge, import.meta.env.VITE_REVENUECAT_ANDROID_KEY)
+  })()
+  return billing
 }

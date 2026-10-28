@@ -35,20 +35,20 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     spokenPrompt: '«Que despierte en soledad el Lobo Feroz y señale a su segunda presa…»',
     details: [
       'Despierta y ataca junto al resto de la manada.',
-      'Mientras ningún Hombre Lobo, Niño Salvaje convertido o Perro Lobo alineado con los lobos haya sido eliminado, despierta una segunda vez a solas para devorar a otra víctima.',
+      'Mientras ningún Hombre Lobo, Niño Criado por Lobos convertido o Perro Mestizo alineado con los lobos haya sido eliminado, despierta una segunda vez a solas para devorar a otra víctima.',
       'En cuanto muere el primer lobo de la partida, pierde definitivamente su segundo ataque.',
     ],
   }),
   infect_father: role({
-    id: 'infect_father', name: 'Infecto Padre de todos los Lobos', shortName: 'Infecto Padre', color: '#8f5149', team: 'wolves', category: 'wolves', maxCards: 1, nightOrder: 65, callKind: 'confirm',
+    id: 'infect_father', name: 'Lobo Infectador', shortName: 'Lobo Infectador', color: '#8f5149', team: 'wolves', category: 'wolves', maxCards: 1, nightOrder: 65, callKind: 'confirm',
     description: 'Una vez por partida puede convertir a la víctima en lobo.',
     narratorPrompt: 'Tras dormir la manada, observa si levanta la mano. Si lo hace, la víctima no muere: queda infectada y conserva su poder.',
-    spokenPrompt: '«Los Lobos duermen… Si el Infecto Padre desea convertir a la víctima en parte de la manada, que alce la mano ahora.»',
+    spokenPrompt: '«Los Lobos duermen… Si el Lobo Infectador desea convertir a la víctima en parte de la manada, que alce la mano ahora.»',
     details: [
       'Despierta y actúa cada noche junto a los demás Hombres Lobo.',
       'Una vez por partida, justo después de que los lobos se duerman, puede levantar la mano para infectar a la víctima elegida en vez de devorarla.',
       'La víctima infectada no muere: se transforma en Hombre Lobo, despierta en los festines nocturnos y conserva su poder original si tenía uno.',
-      'Si infecta al Anciano en su primera herida, éste resiste el mordisco y el poder del Infecto Padre se agota sin surtir efecto.',
+      'Si infecta al Anciano en su primera herida, éste resiste el mordisco y el poder del Lobo Infectador se agota sin surtir efecto.',
     ],
   }),
   albino_wolf: role({
@@ -74,7 +74,7 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   pure_villager: role({
-    id: 'pure_villager', name: 'Aldeano-Aldeano', shortName: 'Aldeano-Aldeano', color: '#d1b66f', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
+    id: 'pure_villager', name: 'Aldeano Puro', shortName: 'Aldeano Puro', color: '#d1b66f', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
     description: 'Su inocencia es pública desde el reparto.',
     narratorPrompt: 'Ubícalo para el narrador y recuerda anunciar públicamente su inocencia.',
     spokenPrompt: '«Que abra los ojos el Aldeano Puro para que yo conozca su rostro inocente…»',
@@ -171,10 +171,10 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   village_fool: role({
-    id: 'village_fool', name: 'Tonto de la Aldea', shortName: 'Tonto', color: '#d47a69', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
+    id: 'village_fool', name: 'Tonto del Pueblo', shortName: 'Tonto', color: '#d47a69', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
     description: 'Sobrevive al linchamiento, revela su carta y pierde el voto.',
     narratorPrompt: 'Ubícalo. Si la aldea lo expulsa, seguirá vivo pero perderá su derecho a voto.',
-    spokenPrompt: '«Que abra los ojos el Tonto de la Aldea para que lo reconozca…»',
+    spokenPrompt: '«Que abra los ojos el Tonto del Pueblo para que lo reconozca…»',
     details: [
       'Si la aldea vota en su contra para expulsarle, revela su carta: los aldeanos, avergonzados, le indultan en el acto.',
       'Sigue con vida pero pierde su derecho a voto para el resto de la partida.',
@@ -213,21 +213,21 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   bear_tamer: role({
-    id: 'bear_tamer', name: 'Domador de Osos', shortName: 'Domador', color: '#7c5f48', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
+    id: 'bear_tamer', name: 'Cuidador del Oso', shortName: 'Domador', color: '#7c5f48', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
     description: 'Cada mañana el oso gruñe si hay un lobo vivo adyacente.',
     narratorPrompt: 'Anota quién tiene el Domador y conserva el orden del coro para comprobar sus vecinos cada mañana.',
-    spokenPrompt: '«Que abra los ojos el Domador de Osos para que conozca su asiento en la mesa…»',
+    spokenPrompt: '«Que abra los ojos el Cuidador del Oso para que conozca su asiento en la mesa…»',
     details: [
       'Cada mañana, si hay al menos un Hombre Lobo vivo sentado a la izquierda o a la derecha inmediata del Domador, el narrador gruñe imitando al oso.',
       'Si no hay lobos vivos junto a él, el oso permanece en calma.',
-      'Si el Domador es infectado por el Infecto Padre, el oso gruñe todas las mañanas.',
+      'Si el Domador es infectado por el Lobo Infectador, el oso gruñe todas las mañanas.',
     ],
   }),
   stuttering_judge: role({
-    id: 'stuttering_judge', name: 'Juez Tartamudo', shortName: 'Juez', color: '#647687', team: 'village', category: 'village', maxCards: 1, firstNightOrder: 30, callKind: 'confirm',
+    id: 'stuttering_judge', name: 'Juez Indeciso', shortName: 'Juez', color: '#647687', team: 'village', category: 'village', maxCards: 1, firstNightOrder: 30, callKind: 'confirm',
     description: 'Una vez por partida puede ordenar una segunda votación inmediata.',
     narratorPrompt: 'Acordad en silencio una señal. Durante una votación podrás activar una segunda votación sin debate.',
-    spokenPrompt: '«Que despierte el Juez Tartamudo y me muestre en silencio su gesto secreto…»',
+    spokenPrompt: '«Que despierte el Juez Indeciso y me muestre en silencio su gesto secreto…»',
     details: [
       'En la primera noche pacta una señal secreta con el narrador.',
       'Una vez por partida, durante una votación eliminatoria diurna, puede hacer esa señal.',
@@ -235,10 +235,10 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   rusty_knight: role({
-    id: 'rusty_knight', name: 'Caballero de la Espada Oxidada', shortName: 'Caballero', color: '#7d7061', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
+    id: 'rusty_knight', name: 'Caballero Oxidado', shortName: 'Caballero', color: '#7d7061', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
     description: 'Si es devorado, enferma al lobo vivo más cercano a su izquierda.',
     narratorPrompt: 'Anota quién tiene el Caballero. Si los lobos lo matan, marca al lobo vivo más cercano a su izquierda.',
-    spokenPrompt: '«Que abra los ojos el Caballero de la Espada Oxidada para que lo reconozca…»',
+    spokenPrompt: '«Que abra los ojos el Caballero Oxidado para que lo reconozca…»',
     details: [
       'Si es devorado por los Hombres Lobo, el Hombre Lobo vivo situado más cerca de su izquierda enferma por el óxido.',
       'Ese lobo sobrevive un día entero y muere a la mañana siguiente del fallecimiento del Caballero.',
@@ -257,10 +257,10 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   devoted_servant: role({
-    id: 'devoted_servant', name: 'Abnegada Sirvienta', shortName: 'Sirvienta', color: '#aa728d', team: 'variable', category: 'ambiguous', maxCards: 1, callKind: 'confirm', passive: true,
+    id: 'devoted_servant', name: 'Sirvienta Devota', shortName: 'Sirvienta', color: '#aa728d', team: 'variable', category: 'ambiguous', maxCards: 1, callKind: 'confirm', passive: true,
     description: 'Antes de revelar a un linchado puede adoptar su carta.',
     narratorPrompt: 'Anota quién tiene la Sirvienta. Antes de revelar a una persona expulsada, pregúntale si quiere quedarse con su carta.',
-    spokenPrompt: '«Que abra los ojos la Abnegada Sirvienta para que la reconozca…»',
+    spokenPrompt: '«Que abra los ojos la Sirvienta Devota para que la reconozca…»',
     details: [
       'Antes de revelarse la carta de un jugador linchado por la aldea, la Sirvienta puede mostrar su carta y adoptar el personaje del difunto.',
       'El expulsado sale con la carta de Sirvienta y ella adquiere el nuevo personaje con todos sus poderes restaurados.',
@@ -279,23 +279,23 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   wild_child: role({
-    id: 'wild_child', name: 'Niño Salvaje', shortName: 'Niño Salvaje', color: '#527957', team: 'variable', category: 'ambiguous', maxCards: 1, firstNightOrder: 20, callKind: 'one-target',
+    id: 'wild_child', name: 'Niño Criado por Lobos', shortName: 'Niño Criado por Lobos', color: '#527957', team: 'variable', category: 'ambiguous', maxCards: 1, firstNightOrder: 20, callKind: 'one-target',
     description: 'Elige un mentor; cuando muere, se convierte en lobo.',
     narratorPrompt: 'Pide que señale a su modelo. Si el modelo muere, se incorporará a la manada desde la noche siguiente.',
-    spokenPrompt: '«Que despierte el Niño Salvaje y señale en silencio a quién tomará como modelo…»',
+    spokenPrompt: '«Que despierte el Niño Criado por Lobos y señale en silencio a quién tomará como modelo…»',
     details: [
       'La primera noche señala a otro jugador como su modelo a seguir.',
       'Mientras su modelo permanezca vivo, juega como un aldeano ordinario.',
-      'Si su modelo muere, el Niño Salvaje se transforma en Hombre Lobo y despierta con la manada a partir de la noche siguiente.',
+      'Si su modelo muere, el Niño Criado por Lobos se transforma en Hombre Lobo y despierta con la manada a partir de la noche siguiente.',
     ],
   }),
   wolf_hound: role({
-    id: 'wolf_hound', name: 'Perro Lobo', shortName: 'Perro Lobo', color: '#86765c', team: 'variable', category: 'ambiguous', maxCards: 1, callKind: 'confirm', passive: true,
+    id: 'wolf_hound', name: 'Perro Mestizo', shortName: 'Perro Mestizo', color: '#86765c', team: 'variable', category: 'ambiguous', maxCards: 1, callKind: 'confirm', passive: true,
     description: 'Elige en secreto ser aldeano o lobo para toda la partida.',
     narratorPrompt: 'Ubícalo, pero no le preguntes su elección. Durante la llamada de la manada anotarás si abre los ojos con los lobos.',
-    spokenPrompt: '«Que abra los ojos el Perro Lobo para que lo reconozca. Decidirá su bando cuando llame a la manada…»',
+    spokenPrompt: '«Que abra los ojos el Perro Mestizo para que lo reconozca. Decidirá su bando cuando llame a la manada…»',
     details: [
-      'La primera noche, cuando el narrador llama a los Hombres Lobo, el Perro Lobo decide si abre los ojos con ellos o no.',
+      'La primera noche, cuando el narrador llama a los Hombres Lobo, el Perro Mestizo decide si abre los ojos con ellos o no.',
       'Si abre los ojos, será Hombre Lobo toda la partida; si no los abre, permanece como Aldeano Común.',
     ],
   }),
@@ -312,10 +312,10 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   sectarian: role({
-    id: 'sectarian', name: 'Abominable Sectario', shortName: 'Sectario', color: '#5f535e', team: 'neutral', category: 'solitary', maxCards: 1, firstNightOrder: 2, callKind: 'sectarian',
+    id: 'sectarian', name: 'Sectario Fanático', shortName: 'Sectario', color: '#5f535e', team: 'neutral', category: 'solitary', maxCards: 1, firstNightOrder: 2, callKind: 'sectarian',
     description: 'Gana cuando elimina al grupo público al que no pertenece.',
     narratorPrompt: 'La aldea debe estar dividida públicamente en dos grupos. Registra a qué grupo pertenece cada persona.',
-    spokenPrompt: '«Que abra los ojos el Abominable Sectario para que conozca su bando…»',
+    spokenPrompt: '«Que abra los ojos el Sectario Fanático para que conozca su bando…»',
     details: [
       'Antes de empezar, la aldea se divide en dos grupos públicos reconocibles (Grupo A y Grupo B).',
       'El Sectario pertenece en secreto a uno de ellos y su meta exclusiva es erradicar a todos los miembros del grupo contrario.',

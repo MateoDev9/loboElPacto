@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activateWithFounderCode, isAuthenticPlayReceipt, isProRole } from './billing'
+import { isProRole } from './billing'
 import {
   advanceRoleCall, applyActorChoice, applyApothecaryRestore, applyBarberCut, applyMayorAssign, applyThiefChoice, assignRoleOwners, beginScapegoatTie, canElectSheriff, createGame, determineWinner, eliminateByVote,
   electSheriff, prepareNextNight, resolveHunterShot, resolveNight, resolveScapegoat, resolveServantChoice, resolveSheriffSuccession, revealCard, unrevealedCards,
@@ -79,7 +79,7 @@ describe('noche', () => {
 })
 
 describe('votaciones', () => {
-  it('el Lobo Feroz pierde su ataque si muere el Perro Lobo aunque sea aldeano', () => {
+  it('el Lobo Feroz pierde su ataque si muere el Perro Mestizo aunque sea aldeano', () => {
     const game = dealt(['werewolf', 'fierce_wolf', 'wolf_hound', 'villager', 'villager', 'villager'])
     const result = eliminateByVote({ ...game, phase: 'day-vote', roleChoices: { wolf_hound: 'village' } }, id(game, 2))
     expect(result.nightSequence).not.toContain('fierce_wolf')
@@ -92,7 +92,7 @@ describe('votaciones', () => {
   })
 })
 
-describe('Abnegada Sirvienta', () => {
+describe('Sirvienta Devota', () => {
   const adopt = (roles: RoleId[], patch: Partial<GameState> = {}) => {
     const game = dealt(roles)
     return resolveServantChoice(eliminateByVote({ ...game, ...patch, phase: 'day-vote' }, id(game, 1)), true)
@@ -110,7 +110,7 @@ describe('Abnegada Sirvienta', () => {
     const result = adopt(['werewolf', 'witch', 'devoted_servant', 'villager', 'villager', 'villager'], { healPotionAvailable: false, poisonPotionAvailable: false })
     expect(result.healPotionAvailable && result.poisonPotionAvailable).toBe(true)
   })
-  it('el nuevo Niño Salvaje elige modelo la noche siguiente', () => {
+  it('el nuevo Niño Criado por Lobos elige modelo la noche siguiente', () => {
     const result = adopt(['werewolf', 'wild_child', 'devoted_servant', 'villager', 'villager', 'villager'])
     expect(result.nightSequence).toContain('wild_child')
     expect(result.mentorId).toBeUndefined()
@@ -270,7 +270,7 @@ describe('variantes de reglamento (casa vs estándar)', () => {
   })
 })
 
-describe('Grimorio PRO y protección antifraude', () => {
+describe('Grimorio PRO', () => {
   it('mantiene gratis los 7 roles del mazo recomendado y marca como PRO los 24 especiales', () => {
     expect(isProRole('werewolf')).toBe(false)
     expect(isProRole('seer')).toBe(false)
@@ -278,19 +278,9 @@ describe('Grimorio PRO y protección antifraude', () => {
     expect(isProRole('infect_father')).toBe(true)
     expect(isProRole('flutist')).toBe(true)
   })
-
-  it('rechaza recibos falsificados tipo Lucky Patcher / HappyMod y acepta recibos con formato Google Play GPA', () => {
-    expect(isAuthenticPlayReceipt({ orderId: '123456789', purchaseToken: 'fake-short' })).toBe(false)
-    expect(isAuthenticPlayReceipt({ orderId: 'GPA.3312-4591-8821-10294', purchaseToken: 'a'.repeat(48) })).toBe(true)
-  })
-
-  it('valida criptográficamente el código de fundador por SHA-256', async () => {
-    expect(await activateWithFounderCode('CODIGO-FALSO')).toBe(false)
-    expect(await activateWithFounderCode('WOLVES-FUNDADOR-2026')).toBe(true)
-  })
 })
 
-describe('expansión Edificaciones (Los edificios de La Aldea)', () => {
+describe('expansión Edificaciones (Los edificios de la aldea)', () => {
   it('el Tabernero no puede ser devorado por los lobos y el Pirómano convierte a su objetivo en Vagabundo', () => {
     const base = dealt(['werewolf', 'villager', 'pyromaniac', 'villager', 'villager'])
     const game: GameState = {

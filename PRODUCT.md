@@ -21,7 +21,7 @@ Acompañar al narrador durante toda la partida: preparar el mazo según el núme
 
 ## Positioning
 
-No reparte cartas ni sustituye a las cartas físicas: los jugadores reciben sus cartas reales y la app las descubre conforme cada personaje abre los ojos la primera noche. A partir de ahí conoce el reparto y aplica las reglas de los 31 personajes, incluidas sus interacciones (Infecto Padre, Sirvienta, Ladrón, Comediante, enamorados…).
+No reparte cartas ni sustituye a las cartas físicas: los jugadores reciben sus cartas reales y la app las descubre conforme cada personaje abre los ojos la primera noche. A partir de ahí conoce el reparto y aplica las reglas de los 31 personajes, incluidas sus interacciones (Lobo Infectador, Sirvienta, Ladrón, Comediante, enamorados…).
 
 ## Operating Context
 

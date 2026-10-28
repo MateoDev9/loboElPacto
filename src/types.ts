@@ -61,7 +61,7 @@ export interface GameRules {
   sheriffTiebreakOnly: boolean
   /** Las Dos Hermanas despiertan todas las noches antes de los lobos en vez de solo la primera noche */
   sistersEveryNight: boolean
-  /** La Vidente y el Zorro despiertan los últimos la primera noche, después del Infecto Padre */
+  /** La Vidente y el Zorro despiertan los últimos la primera noche, después del Lobo Infectador */
   seerFoxLastFirstNight: boolean
   /** El Cazador dispara siempre que muere, incluso por mal de amores o empate del Cabeza de Turco */
   hunterAlwaysShoots: boolean

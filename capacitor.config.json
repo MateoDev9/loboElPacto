@@ -2,16 +2,15 @@
   "appId": "com.mateodev.wolves",
   "appName": "Wolves: El pueblo duerme",
   "webDir": "dist",
-  "bundledWebRuntime": false,
-  "backgroundColor": "#0b0a0e",
+  "backgroundColor": "#0e0d0c",
   "android": {
-    "backgroundColor": "#0b0a0e",
+    "backgroundColor": "#0e0d0c",
     "allowMixedContent": false
   },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 1200,
-      "backgroundColor": "#0b0a0e",
+      "backgroundColor": "#0e0d0c",
       "showSpinner": false
     }
   }

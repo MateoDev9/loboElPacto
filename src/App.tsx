@@ -6,7 +6,7 @@ import {
   TreeDeciduous, Undo2, Users, Volume2, Vote, Wheat, X,
 } from 'lucide-react'
 import {
-  activateWithFounderCode, isProRole, PRO_PRICE_LABEL, purchaseGrimorioPro, restoreGrimorioPurchase, verifyStoredEntitlement,
+  getBilling, isProRole, PLAY_STORE_URL, PRO_PRICE_FALLBACK,
 } from './billing'
 import { BuildingArtwork, BuildingInfoModal, RoleArtwork, RoleInfoModal } from './BuildingArtwork'
 import { BUILDING_LIST, BUILDINGS, recommendedBuildings } from './buildings'
@@ -24,6 +24,7 @@ type Screen = 'home' | 'library' | 'setup' | 'game'
 
 // Número de asiento de cada jugador: los selectores lo muestran para relacionarlos con el coro
 const SeatContext = createContext<Record<string, number>>({})
+const ProPriceContext = createContext(PRO_PRICE_FALLBACK)
 
 function useWakeLock(active: boolean) {
   useEffect(() => {
@@ -106,14 +107,22 @@ function App() {
   // Estados anteriores de la partida para poder deshacer un toque equivocado (persistido en localStorage)
   const [history, setHistory] = useState<GameState[]>(() => loadHistory())
   const [isPro, setIsPro] = useState(false)
+  const [proPrice, setProPrice] = useState(PRO_PRICE_FALLBACK)
   const [showPaywall, setShowPaywall] = useState(false)
 
   useWakeLock(screen === 'game' && Boolean(game))
 
+  // El estado PRO lo da RevenueCat (validado con Google Play); la app no lo guarda por su cuenta
   useEffect(() => {
-    void verifyStoredEntitlement().then((valid) => {
-      if (valid) setIsPro(true)
+    let active = true
+    void getBilling().then(async (billing) => {
+      const [pro, price] = await Promise.all([billing.getProStatus(), billing.getProPrice()])
+      if (!active) return
+      setIsPro(pro)
+      setProPrice(price)
+      await billing.onProChange((value) => { if (active) setIsPro(value) })
     })
+    return () => { active = false }
   }, [])
 
   useEffect(() => { savePeople(people) }, [people])
@@ -165,13 +174,13 @@ function App() {
     />
   ) : null
 
-  if (screen === 'library') return <>{paywallModal}<PeopleLibrary people={people} addPerson={addPerson} removePerson={(name) => setPeople(people.filter((person) => person !== name))} onBack={() => setScreen('home')} /></>
+  if (screen === 'library') return <ProPriceContext.Provider value={proPrice}>{paywallModal}<PeopleLibrary people={people} addPerson={addPerson} removePerson={(name) => setPeople(people.filter((person) => person !== name))} onBack={() => setScreen('home')} /></ProPriceContext.Provider>
   if (screen === 'setup') {
-    if (setupStep === 'players') return <>{paywallModal}<PlayersSetup people={people} names={names} setNames={setNames} addPerson={addPerson} onBack={() => setScreen('home')} onNext={goToRoles} /></>
-    return <>{paywallModal}<DeckSetup playerCount={names.length} deck={deck} setDeck={setDeck} actorCards={actorCards} setActorCards={setActorCards} useSheriff={useSheriff} setUseSheriff={setUseSheriff} useBuildings={useBuildings} setUseBuildings={setUseBuildings} rules={rules} setRules={setRules} isPro={isPro} onOpenPaywall={() => setShowPaywall(true)} onBack={() => setSetupStep('players')} onNext={startGame} /></>
+    if (setupStep === 'players') return <ProPriceContext.Provider value={proPrice}>{paywallModal}<PlayersSetup people={people} names={names} setNames={setNames} addPerson={addPerson} onBack={() => setScreen('home')} onNext={goToRoles} /></ProPriceContext.Provider>
+    return <ProPriceContext.Provider value={proPrice}>{paywallModal}<DeckSetup playerCount={names.length} deck={deck} setDeck={setDeck} actorCards={actorCards} setActorCards={setActorCards} useSheriff={useSheriff} setUseSheriff={setUseSheriff} useBuildings={useBuildings} setUseBuildings={setUseBuildings} rules={rules} setRules={setRules} isPro={isPro} onOpenPaywall={() => setShowPaywall(true)} onBack={() => setSetupStep('players')} onNext={startGame} /></ProPriceContext.Provider>
   }
-  if (screen === 'game' && game) return <>{paywallModal}<GameScreen game={game} setGame={updateGame} canUndo={history.length > 0} onUndo={undo} isPro={isPro} onOpenPaywall={() => setShowPaywall(true)} onExit={() => setScreen('home')} onEnd={endGame} /></>
-  return <>{paywallModal}<Home hasGame={Boolean(game)} onNew={startNewSetup} onLibrary={() => setScreen('library')} onContinue={() => setScreen('game')} /></>
+  if (screen === 'game' && game) return <ProPriceContext.Provider value={proPrice}>{paywallModal}<GameScreen game={game} setGame={updateGame} canUndo={history.length > 0} onUndo={undo} isPro={isPro} onOpenPaywall={() => setShowPaywall(true)} onExit={() => setScreen('home')} onEnd={endGame} /></ProPriceContext.Provider>
+  return <ProPriceContext.Provider value={proPrice}>{paywallModal}<Home hasGame={Boolean(game)} onNew={startNewSetup} onLibrary={() => setScreen('library')} onContinue={() => setScreen('game')} /></ProPriceContext.Provider>
 }
 
 // Las cartas son lo más propio de la app: la portada enseña seis de la mesa básica
@@ -327,14 +336,15 @@ function DeckSetup({
   const isHousePreset = rules.sheriffTiebreakOnly && rules.sistersEveryNight && rules.seerFoxLastFirstNight && rules.hunterAlwaysShoots
   const isOfficialPreset = !rules.sheriffTiebreakOnly && !rules.sistersEveryNight && !rules.seerFoxLastFirstNight && !rules.hunterAlwaysShoots
 
+  const proPrice = useContext(ProPriceContext)
   return <main className="app-shell"><PageHeader step="Paso 2 de 2" onBack={onBack} /><section className="setup-wrap roles-wrap">
     <div className="section-heading"><h2>Elige las cartas</h2><p>Puedes usar la combinación recomendada o ajustarla a las cartas físicas de tu mesa.</p></div>
     {!isPro ? (
       <button type="button" className="grimorio-banner" onClick={onOpenPaywall}>
         <span className="grimorio-banner-icon" aria-hidden="true"><Sparkles size={20} /></span>
         <div>
-          <strong>Grimorio Completo PRO · {PRO_PRICE_LABEL}</strong>
-          <small>Desbloquea los 24 personajes especiales (Infecto Padre, Flautista, Comediante, Ladrón, Cuervo…) con un único pago para siempre.</small>
+          <strong>Grimorio Completo PRO · {proPrice}</strong>
+          <small>Desbloquea los 24 personajes especiales (Lobo Infectador, Flautista, Comediante, Ladrón, Cuervo…) con un único pago para siempre.</small>
         </div>
         <span className="grimorio-cta">Desbloquear</span>
       </button>
@@ -398,7 +408,7 @@ function DeckSetup({
       <ToggleCard
         active={useBuildings}
         icon={<Building2 size={22} />}
-        title={isPro ? 'Jugar con Edificaciones (Los edificios de La Aldea)' : 'Jugar con Edificaciones · PRO'}
+        title={isPro ? 'Jugar con Edificaciones (Los edificios de la aldea)' : 'Jugar con Edificaciones · PRO'}
         text="Cada habitante recibe un edificio público (Granjero, Panadero, Tabernero, Barbero, Noble, Alcalde, Vagabundo…) con poderes adicionales."
         onClick={() => {
           if (!isPro) {
@@ -469,7 +479,7 @@ function DeckSetup({
             active={rules.seerFoxLastFirstNight}
             icon={<Eye size={20} />}
             title="Vidente y Zorro al final de la primera noche"
-            text={rules.seerFoxLastFirstNight ? 'Despiertan tras el Infecto Padre para observar el bando real.' : 'Despiertan antes que los Lobos en la primera noche.'}
+            text={rules.seerFoxLastFirstNight ? 'Despiertan tras el Lobo Infectador para observar el bando real.' : 'Despiertan antes que los Lobos en la primera noche.'}
             onClick={() => setRules({ ...rules, seerFoxLastFirstNight: !rules.seerFoxLastFirstNight })}
           />
           <ToggleCard
@@ -576,46 +586,23 @@ function SpokenPrompt({ text }: { text?: string }) {
 }
 
 function ProPaywallModal({ onClose, onUnlocked }: { onClose: () => void; onUnlocked: () => void }) {
-  const [showCodeBox, setShowCodeBox] = useState(false)
-  const [code, setCode] = useState('')
+  const proPrice = useContext(ProPriceContext)
   const [status, setStatus] = useState('')
+  const [storeUrl, setStoreUrl] = useState<string>()
   const [busy, setBusy] = useState(false)
+  const [native, setNative] = useState(true)
+  useEffect(() => { void getBilling().then((billing) => setNative(billing.available)) }, [])
 
-  const handleBuy = async () => {
+  const run = async (action: 'purchasePro' | 'restorePro') => {
     setBusy(true)
     setStatus('')
-    const res = await purchaseGrimorioPro()
+    const billing = await getBilling()
+    const res = await billing[action]()
     setBusy(false)
-    if (res.ok) {
-      onUnlocked()
-    } else if (res.message) {
-      setStatus(res.message)
-      setShowCodeBox(true)
-    }
-  }
-
-  const handleRestore = async () => {
-    setBusy(true)
-    setStatus('')
-    const res = await restoreGrimorioPurchase()
-    setBusy(false)
-    if (res.ok) {
-      onUnlocked()
-    } else {
-      setStatus(res.message)
-    }
-  }
-
-  const handleRedeem = async () => {
-    if (!code.trim()) return
-    setBusy(true)
-    const ok = await activateWithFounderCode(code)
-    setBusy(false)
-    if (ok) {
-      onUnlocked()
-    } else {
-      setStatus('El código introducido no es válido.')
-    }
+    if (res.ok) return onUnlocked()
+    if (res.cancelled) return
+    setStatus(res.message ?? '')
+    setStoreUrl(res.storeUrl)
   }
 
   return (
@@ -626,34 +613,28 @@ function ProPaywallModal({ onClose, onUnlocked }: { onClose: () => void; onUnloc
         <h3 id="paywall-title">Grimorio Completo PRO</h3>
         <p className="paywall-lead">Desbloquea para siempre los <strong>24 personajes especiales</strong> y lleva tus partidas al siguiente nivel con un único pago, sin suscripciones ni anuncios.</p>
         <ul className="paywall-perks">
-          <li><Check size={16} /> <strong>31 personajes en total:</strong> Infecto Padre, Lobo Feroz, Lobo Albino, Flautista, Comediante, Ladrón, Sirvienta, Zorro, Domador, Pirómano, Cuervo y más.</li>
+          <li><Check size={16} /> <strong>31 personajes en total:</strong> Lobo Infectador, Lobo Feroz, Lobo Albino, Flautista, Comediante, Ladrón, Sirvienta, Zorro, Domador, Pirómano, Cuervo y más.</li>
           <li><Check size={16} /> <strong>Expansión Los Edificios de La Aldea:</strong> activa opcionalmente los 10 oficios públicos (Granjeros, Tabernero, Barbero, Noble, Alcalde, Confesor, Boticario, Institutriz, Panadero y Vagabundos).</li>
           <li><Check size={16} /> <strong>100 % sin conexión y sin anuncios:</strong> una sola compra en el móvil del narrador sirve para toda la mesa.</li>
           <li><Check size={16} /> <strong>Para siempre en tu cuenta:</strong> incluye restauración de compra si cambias de teléfono.</li>
         </ul>
         <div className="paywall-actions">
-          <button type="button" className="button button-primary button-large" disabled={busy} onClick={handleBuy}>
-            <Sparkles size={18} /> Desbloquear por {PRO_PRICE_LABEL}
-          </button>
-          <div className="paywall-subactions">
-            <button type="button" className="text-button dark" disabled={busy} onClick={handleRestore}>Restaurar compra</button>
-            <button type="button" className="text-button dark" onClick={() => setShowCodeBox(!showCodeBox)}>
-              <KeyRound size={14} /> {showCodeBox ? 'Ocultar código' : 'Tengo un código'}
+          {native ? (
+            <button type="button" className="button button-primary button-large" disabled={busy} onClick={() => void run('purchasePro')}>
+              <Sparkles size={18} /> Desbloquear por {proPrice}
             </button>
-          </div>
+          ) : (
+            <a className="button button-primary button-large" href={storeUrl ?? PLAY_STORE_URL} target="_blank" rel="noopener">
+              <Sparkles size={18} /> Descargar en Google Play
+            </a>
+          )}
+          {native && (
+            <div className="paywall-subactions">
+              <button type="button" className="text-button dark" disabled={busy} onClick={() => void run('restorePro')}>Restaurar compra</button>
+            </div>
+          )}
         </div>
-        {showCodeBox && (
-          <div className="paywall-code-box">
-            <input
-              value={code}
-              onChange={(e) => { setCode(e.target.value); setStatus('') }}
-              onKeyDown={(e) => e.key === 'Enter' && void handleRedeem()}
-              placeholder="Código de desbloqueo"
-              aria-label="Código de desbloqueo"
-            />
-            <button type="button" className="button button-secondary" disabled={!code.trim() || busy} onClick={handleRedeem}>Validar</button>
-          </div>
-        )}
+        <p className="paywall-note"><KeyRound size={14} aria-hidden="true" /> {native ? '¿Tienes un código? Canjéalo en Google Play y pulsa «Restaurar compra».' : 'El Grimorio Completo se compra una vez en la app de Android y sirve para toda la mesa.'}</p>
         {status && <p className="paywall-status" role="status">{status}</p>}
       </aside>
     </div>
@@ -661,6 +642,7 @@ function ProPaywallModal({ onClose, onUnlocked }: { onClose: () => void; onUnloc
 }
 
 function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onExit, onEnd }: { game: GameState; setGame: (game: GameState) => void; canUndo: boolean; onUndo: () => void; isPro: boolean; onOpenPaywall: () => void; onExit: () => void; onEnd: () => void }) {
+  const proPrice = useContext(ProPriceContext)
   const [showRoles, setShowRoles] = useState(false)
   const [showChorus, setShowChorus] = useState(true)
   const [inspectRole, setInspectRole] = useState<RoleDefinition | null>(null)
@@ -850,7 +832,7 @@ function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onEx
             <span className="grimorio-banner-icon" aria-hidden="true"><Sparkles size={20} /></span>
             <div>
               <strong>¿Queréis más roles para la siguiente partida?</strong>
-              <small>Desbloquea el Grimorio Completo PRO (24 personajes extra) por un único pago de {PRO_PRICE_LABEL} entre toda la mesa.</small>
+              <small>Desbloquea el Grimorio Completo PRO (24 personajes extra) por un único pago de {proPrice} entre toda la mesa.</small>
             </div>
             <span className="grimorio-cta">Ver PRO</span>
           </button>
@@ -863,14 +845,14 @@ function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onEx
 
 function RoleAction({ game, setGame, roleId, eligibleTargets, targets, updateNight, updateTargets, toggleTarget, skipRole, selectedName }: { game: GameState; setGame: (game: GameState) => void; roleId: RoleId; owners: Player[]; eligibleTargets: Player[]; targets: string[]; updateNight: (patch: Partial<GameState['night']>) => void; updateTargets: (roleId: RoleId, targets: string[]) => void; toggleTarget: (roleId: RoleId, id: string, max: number) => void; skipRole: (roleId: RoleId) => void; selectedName: (id?: string) => string | undefined }) {
   const role = ROLES[roleId]
-  if (roleId === 'wolf_hound') return <RuleCard title="No hace falta preguntarle"><p>Solo anota quién tiene el Perro Lobo. Cuando despierte la manada, marca si ha abierto los ojos con ellos.</p></RuleCard>
+  if (roleId === 'wolf_hound') return <RuleCard title="No hace falta preguntarle"><p>Solo anota quién tiene el Perro Mestizo. Cuando despierte la manada, marca si ha abierto los ojos con ellos.</p></RuleCard>
   if (roleId === 'thief') return <ThiefActions game={game} setGame={setGame} />
   if (roleId === 'sectarian') return <SectarianGroups game={game} setGame={setGame} />
   if (roleId === 'actor') return <ActorActions game={game} setGame={setGame} />
   if (roleId === 'werewolf') {
     const bakerPlayer = game.buildingsEnabled ? game.players.find((player) => player.alive && hasActiveBuilding(game, player, 'baker')) : undefined
     return <>
-      {(game.round === 1 || game.servantRestartRole === 'wolf_hound') && game.players.some((player) => player.roleId === 'wolf_hound' && player.alive) && <ToggleCard active={game.roleChoices.wolf_hound === 'wolves'} icon={<Dog size={22} />} title="El Perro Lobo abrió los ojos con la manada" text="Márcalo solo si lo has observado; no se le pregunta su elección." onClick={() => setGame({ ...game, roleChoices: { ...game.roleChoices, wolf_hound: game.roleChoices.wolf_hound === 'wolves' ? 'village' : 'wolves' } })} />}
+      {(game.round === 1 || game.servantRestartRole === 'wolf_hound') && game.players.some((player) => player.roleId === 'wolf_hound' && player.alive) && <ToggleCard active={game.roleChoices.wolf_hound === 'wolves'} icon={<Dog size={22} />} title="El Perro Mestizo abrió los ojos con la manada" text="Márcalo solo si lo has observado; no se le pregunta su elección." onClick={() => setGame({ ...game, roleChoices: { ...game.roleChoices, wolf_hound: game.roleChoices.wolf_hound === 'wolves' ? 'village' : 'wolves' } })} />}
       <PlayerPicker players={eligibleTargets} selected={game.night.wolfTargetId ? [game.night.wolfTargetId] : []} onSelect={(id) => updateNight({ wolfTargetId: id })} label="Víctima de la manada" />
       {!game.villagePowersDisabled && game.players.some((player) => player.roleId === 'little_girl' && player.alive) && <ToggleCard active={game.night.littleGirlCaught} icon={<Eye size={22} />} title="La Niña Pequeña ha sido sorprendida" text="Si la descubren espiando, morirá en lugar de la víctima elegida." onClick={() => updateNight({ littleGirlCaught: !game.night.littleGirlCaught })} />}
       {bakerPlayer && (
@@ -878,7 +860,7 @@ function RoleAction({ game, setGame, roleId, eligibleTargets, targets, updateNig
           <div className="building-callout-head">
             <BuildingArtwork buildingId="baker" className="role-icon small" />
             <div>
-              <strong>{bakerPlayer.name} · La Panadería (Panadero)</strong>
+              <strong>{bakerPlayer.name} · Panadería (Panadero)</strong>
               <small>Interviene cada noche inmediatamente después de que los Hombres Lobo cierren los ojos.</small>
             </div>
           </div>
@@ -888,7 +870,7 @@ function RoleAction({ game, setGame, roleId, eligibleTargets, targets, updateNig
     </>
   }
   if (roleId === 'infect_father') return <ToggleCard active={game.night.infectVictim} disabled={!game.infectionAvailable || !game.night.wolfTargetId} icon={<Skull size={22} />} title="Infectar a la víctima" text={!game.infectionAvailable ? 'El poder ya se utilizó.' : !game.night.wolfTargetId ? 'La manada todavía no ha elegido víctima.' : game.players.find((player) => player.id === game.night.wolfTargetId)?.roleId === 'elder' && game.elderWolfHits === 0 ? `${selectedName(game.night.wolfTargetId)} es el Anciano: la primera mordedura no le infecta y resistirá el ataque. El poder se gastará.` : `${selectedName(game.night.wolfTargetId)} no morirá y se incorporará en secreto a la manada.`} onClick={() => updateNight({ infectVictim: !game.night.infectVictim })} />
-  if (roleId === 'fierce_wolf') return game.wolfDeathsOccurred ? <RuleCard title="El segundo ataque se ha perdido"><p>Ya ha muerto un Hombre Lobo, el Niño Salvaje o el Perro Lobo.</p></RuleCard> : <PlayerPicker players={eligibleTargets} selected={game.night.fierceWolfTargetId ? [game.night.fierceWolfTargetId] : []} onSelect={(id) => updateNight({ fierceWolfTargetId: id })} label="Segunda víctima del Lobo Feroz" />
+  if (roleId === 'fierce_wolf') return game.wolfDeathsOccurred ? <RuleCard title="El segundo ataque se ha perdido"><p>Ya ha muerto un Hombre Lobo, el Niño Criado por Lobos o el Perro Mestizo.</p></RuleCard> : <PlayerPicker players={eligibleTargets} selected={game.night.fierceWolfTargetId ? [game.night.fierceWolfTargetId] : []} onSelect={(id) => updateNight({ fierceWolfTargetId: id })} label="Segunda víctima del Lobo Feroz" />
   if (roleId === 'albino_wolf' && game.round === 1) return <RuleCard title="Esta noche no actúa solo"><p>Participa con la manada. Su ataque contra otro lobo empieza en la segunda noche y se repite una noche de cada dos.</p></RuleCard>
   if (roleId === 'albino_wolf') return <PlayerPicker players={eligibleTargets} selected={game.night.albinoWolfTargetId ? [game.night.albinoWolfTargetId] : []} onSelect={(id) => updateNight({ albinoWolfTargetId: id })} label="Hombre Lobo eliminado por el Albino" />
   if (roleId === 'protector') return <PlayerPicker players={eligibleTargets} selected={targets} onSelect={(id) => updateNight({ targets: { ...game.night.targets, protector: [id] }, protectedTargetId: id })} label="Persona protegida esta noche" />
@@ -1143,7 +1125,7 @@ function BuildingDayActions({ game, setGame }: { game: GameState; setGame: (game
           <div className="building-callout-head">
             <BuildingArtwork buildingId="mayor" className="role-icon small" />
             <div>
-              <strong>{mayor.name} · El Ayuntamiento (Alcalde)</strong>
+              <strong>{mayor.name} · Ayuntamiento (Alcalde)</strong>
               <small>Hay {vacantList.length === 1 ? 'un edificio vacante' : `${vacantList.length} edificios vacantes`}. El Alcalde puede alojar en él a un Vagabundo (con su poder restaurado).</small>
             </div>
             <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.mayor)} aria-label="Reglas del Alcalde"><Info size={16} /></button>
@@ -1224,7 +1206,7 @@ function BuildingDayActions({ game, setGame }: { game: GameState; setGame: (game
                 <div className="building-action-row">
                   <BuildingArtwork buildingId="barber" className="role-icon small" />
                   <div>
-                    <strong>{barber.name} · La Barbería (Barbero)</strong>
+                    <strong>{barber.name} · Barbería (Barbero)</strong>
                     <small>Poder único: elimina en el acto a alguien con edificio. Si no es Lobo, el Barbero también muere.</small>
                   </div>
                   <div className="building-row-actions">
@@ -1271,7 +1253,7 @@ function BuildingDayActions({ game, setGame }: { game: GameState; setGame: (game
                 <div className="building-action-row">
                   <BuildingArtwork buildingId="confessor" className="role-icon small" />
                   <div>
-                    <strong>{confessor.name} · La Iglesia (Confesor)</strong>
+                    <strong>{confessor.name} · Capilla (Confesor)</strong>
                     <small>Poder único: obliga a un jugador a mostrarle inmediatamente en secreto su carta de personaje.</small>
                   </div>
                   <div className="building-row-actions">
@@ -1324,7 +1306,7 @@ function BuildingDayActions({ game, setGame }: { game: GameState; setGame: (game
                 <div className="building-action-row">
                   <BuildingArtwork buildingId="apothecary" className="role-icon small" />
                   <div>
-                    <strong>{apothecary.name} · La Choza (Boticario)</strong>
+                    <strong>{apothecary.name} · Cabaña (Boticario)</strong>
                     <small>
                       {spentBuildingPlayers.length > 0
                         ? 'Poder único: devuelve a otro jugador la ficha ya utilizada de su edificio.'
@@ -1458,15 +1440,15 @@ function VoteScreen({ game, setGame }: { game: GameState; setGame: (game: GameSt
       ? <RuleCard title={`${sheriffName} desempata como Alguacil`}><p>Su voto vale normal, pero decide quién sale en caso de empate{scapegoatAlive ? ' si no interviene el Cabeza de Turco' : ''}.</p></RuleCard>
       : <RuleCard title={`El voto de ${sheriffName} cuenta doble`}><p>Es el Alguacil de la aldea.</p></RuleCard>
     )}
-    {foolName && <RuleCard title={`${foolName} no vota`}><p>El Tonto de la Aldea ya fue indultado y perdió su derecho a voto.</p></RuleCard>}
+    {foolName && <RuleCard title={`${foolName} no vota`}><p>El Tonto del Pueblo ya fue indultado y perdió su derecho a voto.</p></RuleCard>}
 
-    {/* Paso previo 1: La Escuela · Institutriz */}
+    {/* Paso previo 1: Escuela · Institutriz */}
     {headmistress && (
       <div className="discovery-box">
         <div className="building-callout-head">
           <BuildingArtwork buildingId="headmistress" className="role-icon small" />
           <div>
-            <strong>{headmistress.name} · La Escuela (Institutriz)</strong>
+            <strong>{headmistress.name} · Escuela (Institutriz)</strong>
             <small>La Institutriz nunca vota. Antes de abrir la votación, puede amonestar hasta a 2 personas con edificio para que hoy no voten.</small>
           </div>
           <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.headmistress)} aria-label="Reglas de la Institutriz"><Info size={16} /></button>
@@ -1482,13 +1464,13 @@ function VoteScreen({ game, setGame }: { game: GameState; setGame: (game: GameSt
       </div>
     )}
 
-    {/* Paso previo 2: La Taberna · Tabernero vota antes que nadie */}
+    {/* Paso previo 2: Taberna · Tabernero vota antes que nadie */}
     {innkeeper && (
       <div className="discovery-box">
         <div className="building-callout-head">
           <BuildingArtwork buildingId="innkeeper" className="role-icon small" />
           <div>
-            <strong>{innkeeper.name} · La Taberna (Tabernero)</strong>
+            <strong>{innkeeper.name} · Taberna (Tabernero)</strong>
             <small>Nadie puede votar contra {innkeeper.name}. Debe anunciar su voto en voz alta antes que el resto; si su votado resulta elegido por la aldea, perderá su ficha e inmunidad.</small>
           </div>
           <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.innkeeper)} aria-label="Reglas del Tabernero"><Info size={16} /></button>
@@ -1532,13 +1514,13 @@ function VoteScreen({ game, setGame }: { game: GameState; setGame: (game: GameSt
       </div>
     )}
 
-    {/* Paso posterior: El Palacete · Noble puede indultar al condenado */}
+    {/* Paso posterior: Palacio · Noble puede indultar al condenado */}
     {canNoblePardon && noble && pendingPlayer && (
       <div className="discovery-box">
         <div className="building-callout-head">
           <BuildingArtwork buildingId="noble" className="role-icon small" />
           <div>
-            <strong>{noble.name} · El Palacete (Noble)</strong>
+            <strong>{noble.name} · Palacio (Noble)</strong>
             <small>A petición de {pendingPlayer.name}, el Noble puede gastar su ficha de Blasón para concederle el indulto.</small>
           </div>
           <button type="button" className="role-info-btn" onClick={() => setInspectBuilding(BUILDINGS.noble)} aria-label="Reglas del Noble"><Info size={16} /></button>
@@ -1721,7 +1703,7 @@ function winnerCopy(winner?: Winner) {
     angel: { icon: <Feather size={34} />, title: 'El Ángel despierta de su pesadilla', text: 'Ha sido eliminado en la primera votación o durante la primera noche.' },
     flutist: { icon: <Music size={34} />, title: 'El Flautista encanta la aldea', text: 'Todas las demás personas vivas están hechizadas.' },
     albino_wolf: { icon: <WolfCrest size={36} />, title: 'El Lobo Albino queda solo', text: 'Es el único superviviente de la aldea.' },
-    sectarian: { icon: <Flame size={34} />, title: 'Vence el Abominable Sectario', text: 'Ha eliminado a todo el grupo contrario.' },
+    sectarian: { icon: <Flame size={34} />, title: 'Vence el Sectario Fanático', text: 'Ha eliminado a todo el grupo contrario.' },
     lovers: { icon: <Heart size={34} />, title: 'Los amantes sobreviven juntos', text: 'Son las dos únicas personas con vida.' },
     nobody: { icon: <Skull size={34} />, title: 'Nadie sobrevive', text: 'No queda nadie con vida en la aldea: ningún bando gana.' },
   }
