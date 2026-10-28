@@ -174,22 +174,25 @@ function App() {
   return <>{paywallModal}<Home hasGame={Boolean(game)} onNew={startNewSetup} onLibrary={() => setScreen('library')} onContinue={() => setScreen('game')} /></>
 }
 
+// Las cartas son lo más propio de la app: la portada enseña seis de la mesa básica
+const HOME_CARDS: RoleId[] = ['werewolf', 'seer', 'witch', 'hunter', 'cupid', 'villager']
+
 function Home({ hasGame, onNew, onLibrary, onContinue }: { hasGame: boolean; onNew: () => void; onLibrary: () => void; onContinue: () => void }) {
   return <main className="home-shell"><section className="home-content">
     <div className="brand-mark" aria-hidden="true"><WolfCrest size={38} /></div>
-    <span className="brand-kicker">Wolves · El pueblo duerme</span>
-    <h1>El pueblo duerme.<br /><em>Es hora de empezar.</em></h1>
+    <h1>Wolves: el pueblo duerme</h1>
     <p className="hero-copy">Prepara las cartas físicas, anota quién tiene cada una conforme despierten la primera noche y dirige cada turno sin consultar el reglamento.</p>
     <div className="home-actions">
       <button className="button button-primary button-large" onClick={onNew}><CirclePlus size={20} /> Nueva partida</button>
       {hasGame && <button className="button button-secondary button-large" onClick={onContinue}><Play size={18} fill="currentColor" /> Continuar partida</button>}
       <button className="button button-secondary button-large" onClick={onLibrary}><BookUser size={19} /> Jugadores habituales</button>
     </div>
-    <ol className="ritual-steps" aria-label="Cómo funciona">
-      <li><span>I</span><div><strong>Mesa y mazo</strong><small>Elige quién se sienta a la mesa en sentido horario y prepara las cartas reales.</small></div></li>
-      <li><span>II</span><div><strong>Primera noche</strong><small>Reparte las cartas físicas. La app ubica cada rol conforme abren los ojos.</small></div></li>
-      <li><span>III</span><div><strong>Crónica guiada</strong><small>Llama en orden, resuelve ataques, pociones y votaciones con opción de deshacer.</small></div></li>
-    </ol>
+    <div className="home-cards">{HOME_CARDS.map((id) => <RoleArtwork key={id} roleId={id} className="home-card" />)}</div>
+    <ul className="ritual-steps" aria-label="Cómo funciona">
+      <li><div><strong>Mesa y mazo</strong><small>Elige quién se sienta a la mesa en sentido horario y prepara las cartas reales.</small></div></li>
+      <li><div><strong>Primera noche</strong><small>Reparte las cartas físicas. La app ubica cada rol conforme abren los ojos.</small></div></li>
+      <li><div><strong>Crónica guiada</strong><small>Llama en orden, resuelve ataques, pociones y votaciones con opción de deshacer.</small></div></li>
+    </ul>
     <div className="feature-row"><span><Moon size={15} /> Orden de llamada</span><span><Users size={15} /> 31 personajes</span><span><ShieldCheck size={15} /> Sin conexión</span></div>
   </section></main>
 }
@@ -620,7 +623,6 @@ function ProPaywallModal({ onClose, onUnlocked }: { onClose: () => void; onUnloc
       <aside className="paywall-modal" role="dialog" aria-modal="true" aria-labelledby="paywall-title" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="icon-button paywall-close" onClick={onClose} aria-label="Cerrar"><X size={19} /></button>
         <div className="paywall-crest"><WolfCrest size={34} /></div>
-        <span className="brand-kicker">Expansión Completa · Pago único</span>
         <h3 id="paywall-title">Grimorio Completo PRO</h3>
         <p className="paywall-lead">Desbloquea para siempre los <strong>24 personajes especiales</strong> y lleva tus partidas al siguiente nivel con un único pago, sin suscripciones ni anuncios.</p>
         <ul className="paywall-perks">
@@ -810,7 +812,6 @@ function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onEx
         {phase.icon}
       </div>
       <div>
-        <span className="phase-progress">{phase.kicker}</span>
         <div className="phase-title-row">
           <h2>{phase.title}</h2>
           {activePhaseRole && (
@@ -825,6 +826,7 @@ function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onEx
             </button>
           )}
         </div>
+        <p className="phase-progress">{phase.kicker}</p>
         <p className="phase-copy">{phase.text}</p>
       </div>
     </div>

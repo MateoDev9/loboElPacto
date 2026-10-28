@@ -39,7 +39,6 @@ export interface RoleDefinition {
   spokenPrompt?: string
   team: Team
   category: RoleCategory
-  icon: string
   color: string
   maxCards: number
   firstNightOrder?: number
