@@ -138,6 +138,8 @@ export interface GameState {
   lovers: string[]
   charmedIds: string[]
   infectedIds: string[]
+  /** Víctimas infectadas en la última noche: el narrador debe tocarlas para que despierten como lobo */
+  newlyInfectedIds?: string[]
   mentorId?: string
   wildChildTurned: boolean
   actorCards?: RoleId[]

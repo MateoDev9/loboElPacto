@@ -50,6 +50,12 @@ describe('noche', () => {
     const game = dealt(['werewolf', 'infect_father', 'elder', 'villager', 'villager', 'villager'])
     expect(resolveNight(withNight({ ...game, elderWolfHits: 1 }, { wolfTargetId: id(game, 2), infectVictim: true })).infectedIds).toContain(id(game, 2))
   })
+  it('la víctima infectada queda marcada para que el narrador la toque en el siguiente festín', () => {
+    const game = dealt(['werewolf', 'infect_father', 'villager', 'villager', 'villager', 'villager'])
+    const result = resolveNight(withNight(game, { wolfTargetId: id(game, 2), infectVictim: true }))
+    expect(result.newlyInfectedIds).toEqual([id(game, 2)])
+    expect(resolveNight(prepareNextNight({ ...result, phase: 'night-result' })).newlyInfectedIds).toEqual([])
+  })
   it('el Pirómano salva a la víctima, mata al lobo de su derecha y anula el resto de ataques', () => {
     const game = dealt(['villager', 'werewolf', 'villager', 'werewolf', 'fierce_wolf', 'pyromaniac'])
     const result = resolveNight(withNight(game, { wolfTargetId: id(game, 2), pyromaniacTargetId: id(game, 2), fierceWolfTargetId: id(game, 0) }))

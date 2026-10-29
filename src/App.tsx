@@ -363,7 +363,7 @@ function DeckSetup({
           <RoleArtwork roleId={item.id} className="role-icon clickable" onClick={() => setInspectRole(item)} />
           <div onClick={() => setInspectRole(item)} style={{ cursor: 'pointer', minWidth: 0 }}>
             <strong>{item.name} {locked && <span className="pro-tag"><Lock size={11} /> PRO</span>}</strong>
-            <small>{description}{item.id === 'two_sisters' ? ' Se añaden las 2 cartas.' : item.id === 'three_brothers' ? ' Se añaden las 3 cartas.' : ''}</small>
+            <small>{description}{item.id === 'two_sisters' ? ' Ocupa 2 cartas del mazo.' : item.id === 'three_brothers' ? ' Ocupa 3 cartas del mazo.' : ''}</small>
           </div>
           <div className="catalog-card-controls">
             <button
@@ -752,11 +752,19 @@ function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onEx
     if (game.phase === 'servant-action') return { icon: <RoleArtwork roleId="devoted_servant" className="phase-role-art" />, kicker: 'Antes de revelar la carta', title: 'La Sirvienta decide', text: `${selectedName(game.pendingVoteTargetId)} ha sido elegido. Puede quedarse con su carta antes de que la reveles.` }
     if (game.phase === 'scapegoat-action') return { icon: <RoleArtwork roleId="scapegoat" className="phase-role-art" />, kicker: 'Empate en la votación', title: 'El Cabeza de Turco elige', text: 'Antes de salir, decide quién podrá votar en la próxima ronda.' }
     if (game.phase === 'game-over') return winnerCopy(game.winner)
+    // Las víctimas infectadas la noche anterior no saben que son lobos: el narrador debe tocarlas para que despierten con la manada
+    const newlyInfectedNames = currentRoleId === 'werewolf'
+      ? (game.newlyInfectedIds ?? []).map((id) => game.players.find((player) => player.id === id)?.name).filter(Boolean)
+      : []
+    const plural = newlyInfectedNames.length > 1
+    const infectedNotice = newlyInfectedNames.length
+      ? ` Toca a ${newlyInfectedNames.join(' y ')} para que despierte${plural ? 'n' : ''} con la manada: desde ahora ${plural ? 'son Hombres Lobo' : 'es Hombre Lobo'}.`
+      : ''
     return {
       icon: <RoleArtwork roleId={currentRoleId} className="phase-role-art" />,
       kicker: `Noche ${game.round} · Llamada ${game.sequenceIndex + 1} de ${game.nightSequence.length}`,
       title: actingAsActor ? `El Comediante actúa como ${currentRole?.name}` : `Se despierta ${currentRole?.name}`,
-      text: actingAsActor ? `Despierta al Comediante en lugar de ${currentRole?.name}. ${currentRole?.narratorPrompt ?? ''} Retira después la carta del centro.` : currentRole?.narratorPrompt ?? '',
+      text: (actingAsActor ? `Despierta al Comediante en lugar de ${currentRole?.name}. ${currentRole?.narratorPrompt ?? ''} Retira después la carta del centro.` : currentRole?.narratorPrompt ?? '') + infectedNotice,
       spoken: currentRole?.spokenPrompt,
     }
   }, [game, currentRoleId, actingAsActor, sheriffTiebreakOnly])

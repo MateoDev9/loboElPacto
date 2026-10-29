@@ -303,6 +303,7 @@ export function resolveNight(game: GameState): GameState {
       : game.players,
   }
   const deaths: Array<{ playerId?: string; cause: DeathCause }> = []
+  next = { ...next, newlyInfectedIds: [] }
   const victim = next.night.wolfTargetId
   const victimPlayer = next.players.find((player) => player.id === victim)
   const pyromaniacSavesVictim = Boolean(victim && burnedTargetId === victim)
@@ -315,7 +316,7 @@ export function resolveNight(game: GameState): GameState {
   } else if (next.night.littleGirlCaught) {
     deaths.push({ playerId: aliveWithRole(next, 'little_girl')[0]?.id, cause: 'little-girl' })
   } else if (victim && next.night.infectVictim && !elderResistsInfection) {
-    if (!next.infectedIds.includes(victim)) next = { ...next, infectedIds: [...next.infectedIds, victim] }
+    if (!next.infectedIds.includes(victim)) next = { ...next, infectedIds: [...next.infectedIds, victim], newlyInfectedIds: [victim] }
   } else if (victim && !next.night.witchSaved) {
     const protectedByProtector = next.night.protectedTargetId === victim && victimPlayer?.roleId !== 'little_girl'
     if (!protectedByProtector) deaths.push({ playerId: victim, cause: 'wolves' })
