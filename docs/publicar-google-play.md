@@ -105,7 +105,7 @@ Archivos listos en `docs/google-play/` y `public/`:
 > Gratis con los 7 personajes clásicos. El Grimorio Completo, de pago único, añade 24 personajes especiales y la expansión de edificios de la aldea, para siempre y para toda la mesa.
 
 **Otros apartados de Play Console:**
-- **Política de privacidad:** `https://mateodev9.github.io/loboElPacto/privacidad.html` (la versión nueva estará publicada cuando hagas push).
+- **Política de privacidad:** `https://mateodev9.github.io/wolves/privacidad.html` (la versión nueva estará publicada cuando hagas push).
 - **Anuncios:** no contiene anuncios.
 - **Público objetivo:** mayores de 13 años (así no aplica la política de familias).
 - **Clasificación de contenido:** rellena el cuestionario con sinceridad (juego de deducción con muertes narradas en texto, sin violencia gráfica ni compras con dinero real de azar).
