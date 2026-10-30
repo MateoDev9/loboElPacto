@@ -375,7 +375,7 @@ function finishVote(game: GameState, playerId: string): GameState {
     judgeSecondVoteActive: false,
     noblePardonRequested: false,
     scapegoatVoters: [],
-    // El Tonto indultado que era Alguacil pierde el cargo para el resto de la partida
+    // El Payaso indultado que era Alguacil pierde el cargo para el resto de la partida
     ...(foolSurvives && playerId === game.sheriffId ? { sheriffId: undefined, sheriffLost: true } : {}),
   }
   if (survivesVote) return finishDeaths({ ...next, postDeathAction: post })
@@ -397,14 +397,14 @@ export function unrevealedCards(game: GameState): RoleId[] {
 
 export function eliminateByVote(game: GameState, playerId?: string): GameState {
   if (!playerId) return prepareNextNight({ ...game, pendingVoteTargetId: undefined, lastDeaths: [] })
-  // Si el Noble indulta al condenado, no es eliminado ni interviene la Sirvienta
+  // Si el Noble indulta al condenado, no es eliminado ni interviene el Ama de Llaves
   const target = game.players.find((player) => player.id === playerId)
   const noblePlayer = game.buildingsEnabled ? game.players.find((player) => hasActiveBuilding(game, player, 'noble')) : undefined
   if (noblePlayer && game.noblePardonRequested && target && !isVagrant(game, target)) {
     return finishVote(game, playerId)
   }
   const servant = aliveWithRole(game, 'devoted_servant')[0]
-  // Una Sirvienta enamorada no puede usar su poder
+  // Un Ama de Llaves enamorada no puede usar su poder
   if (servant && servant.id !== playerId && !game.lovers.includes(servant.id)) return { ...game, phase: 'servant-action', pendingVoteTargetId: playerId }
   return finishVote(game, playerId)
 }
@@ -416,14 +416,14 @@ export function resolveServantChoice(game: GameState, adoptsRole: boolean): Game
   const servant = aliveWithRole(game, 'devoted_servant')[0]
   const targetRole = game.players.find((player) => player.id === targetId)?.roleId
   if (adoptsRole && servant && targetRole) {
-    // Intercambian las cartas: el expulsado sale con la carta de Sirvienta y su personaje vuelve a empezar con los poderes restaurados
+    // Intercambian las cartas: el expulsado sale con la carta del Ama de Llaves y su personaje vuelve a empezar con los poderes restaurados
     next = {
       ...game,
       ...restoredPowers(targetRole),
       players: game.players.map((player) => player.id === servant.id ? { ...player, roleId: targetRole } : player.id === targetId ? { ...player, roleId: 'devoted_servant' } : player),
       charmedIds: game.charmedIds.filter((id) => id !== servant.id),
       servantRestartRole: targetRole,
-      // La Sirvienta que era Alguacil pierde el cargo al cambiar de carta
+      // El Ama de Llaves que era Alguacil pierde el cargo al cambiar de carta
       sheriffId: game.sheriffId === servant.id ? undefined : game.sheriffId,
     }
   }

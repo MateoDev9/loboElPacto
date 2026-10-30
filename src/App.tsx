@@ -344,7 +344,7 @@ function DeckSetup({
         <span className="grimorio-banner-icon" aria-hidden="true"><Sparkles size={20} /></span>
         <div>
           <strong>Grimorio Completo PRO · {proPrice}</strong>
-          <small>Desbloquea los 24 personajes especiales (Lobo Infectador, Flautista, Comediante, Ladrón, Cuervo…) con un único pago para siempre.</small>
+          <small>Desbloquea los 24 personajes especiales (Lobo Portador de Maldiciones, Flautista, Comediante, Ladrón, Cuervo…) con un único pago para siempre.</small>
         </div>
         <span className="grimorio-cta">Desbloquear</span>
       </button>
@@ -479,7 +479,7 @@ function DeckSetup({
             active={rules.seerFoxLastFirstNight}
             icon={<Eye size={20} />}
             title="Vidente y Zorro al final de la primera noche"
-            text={rules.seerFoxLastFirstNight ? 'Despiertan tras el Lobo Infectador para observar el bando real.' : 'Despiertan antes que los Lobos en la primera noche.'}
+            text={rules.seerFoxLastFirstNight ? 'Despiertan tras el Lobo Portador de Maldiciones para observar el bando real.' : 'Despiertan antes que los Lobos en la primera noche.'}
             onClick={() => setRules({ ...rules, seerFoxLastFirstNight: !rules.seerFoxLastFirstNight })}
           />
           <ToggleCard
@@ -613,7 +613,7 @@ function ProPaywallModal({ onClose, onUnlocked }: { onClose: () => void; onUnloc
         <h3 id="paywall-title">Grimorio Completo PRO</h3>
         <p className="paywall-lead">Desbloquea para siempre los <strong>24 personajes especiales</strong> y lleva tus partidas al siguiente nivel con un único pago, sin suscripciones ni anuncios.</p>
         <ul className="paywall-perks">
-          <li><Check size={16} /> <strong>31 personajes en total:</strong> Lobo Infectador, Lobo Feroz, Lobo Albino, Flautista, Comediante, Ladrón, Sirvienta, Zorro, Domador, Pirómano, Cuervo y más.</li>
+          <li><Check size={16} /> <strong>31 personajes en total:</strong> Lobo Portador de Maldiciones, Lobo Feroz, Lobo Albino, Flautista, Comediante, Ladrón, Ama de Llaves, Zorro, Domador, Pirómano, Cuervo y más.</li>
           <li><Check size={16} /> <strong>Expansión Los Edificios de La Aldea:</strong> activa opcionalmente los 10 oficios públicos (Granjeros, Tabernero, Barbero, Noble, Alcalde, Confesor, Boticario, Institutriz, Panadero y Vagabundos).</li>
           <li><Check size={16} /> <strong>100 % sin conexión y sin anuncios:</strong> una sola compra en el móvil del narrador sirve para toda la mesa.</li>
           <li><Check size={16} /> <strong>Para siempre en tu cuenta:</strong> incluye restauración de compra si cambias de teléfono.</li>
@@ -749,7 +749,7 @@ function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onEx
     if (game.phase === 'day-vote') return { icon: <Vote size={30} />, kicker: `Día ${game.round} · Votación`, title: game.judgeSecondVoteActive ? 'Segunda votación' : 'La aldea vota', text: 'Elige a quién expulsa la aldea. Las reglas especiales se aplicarán al confirmar.', spoken: '«A la cuenta de tres, señalad con el dedo a la persona que queréis expulsar: uno, dos y tres…»' }
     if (game.phase === 'sheriff-action') return { icon: <Star size={30} />, kicker: 'Último aliento del Alguacil', title: 'El Alguacil nombra sucesor', text: sheriffTiebreakOnly ? 'Antes de abandonar la partida, el Alguacil elige quién hereda su cargo y su voto de desempate.' : 'Antes de abandonar la partida, el Alguacil elige quién hereda su cargo y su voto doble.' }
     if (game.phase === 'hunter-action') return { icon: <RoleArtwork roleId="hunter" className="phase-role-art" />, kicker: 'Última acción del Cazador', title: 'El Cazador dispara', text: 'Antes de abandonar la partida, el Cazador debe señalar a una persona.' }
-    if (game.phase === 'servant-action') return { icon: <RoleArtwork roleId="devoted_servant" className="phase-role-art" />, kicker: 'Antes de revelar la carta', title: 'La Sirvienta decide', text: `${selectedName(game.pendingVoteTargetId)} ha sido elegido. Puede quedarse con su carta antes de que la reveles.` }
+    if (game.phase === 'servant-action') return { icon: <RoleArtwork roleId="devoted_servant" className="phase-role-art" />, kicker: 'Antes de revelar la carta', title: 'El Ama de Llaves decide', text: `${selectedName(game.pendingVoteTargetId)} ha sido elegido. Puede quedarse con su carta antes de que la reveles.` }
     if (game.phase === 'scapegoat-action') return { icon: <RoleArtwork roleId="scapegoat" className="phase-role-art" />, kicker: 'Empate en la votación', title: 'El Cabeza de Turco elige', text: 'Antes de salir, decide quién podrá votar en la próxima ronda.' }
     if (game.phase === 'game-over') return winnerCopy(game.winner)
     // Las víctimas infectadas la noche anterior no saben que son lobos: el narrador debe tocarlas para que despierten con la manada
@@ -832,7 +832,7 @@ function GameScreen({ game, setGame, canUndo, onUndo, isPro, onOpenPaywall, onEx
       {game.phase === 'day-vote' && <><DebateTimer /><BuildingDayActions game={game} setGame={setGame} /><VoteScreen game={game} setGame={setGame} /></>}
       {game.phase === 'hunter-action' && <HunterShot game={game} setGame={setGame} />}
       {game.phase === 'sheriff-action' && <PlayerPicker players={eligibleSheriffCandidates(game)} selected={[]} onSelect={(id) => setGame(resolveSheriffSuccession(game, id))} label={game.buildingsEnabled ? 'Nuevo Alguacil (entre los Granjeros vivos)' : 'Nuevo Alguacil'} />}
-      {game.phase === 'servant-action' && <div className="decision-cards"><button onClick={() => setGame(resolveServantChoice(game, true))}><span className="icon-badge"><HeartHandshake size={24} /></span><strong>Adoptar el personaje</strong><small>La Sirvienta conserva la vida con la carta de {selectedName(game.pendingVoteTargetId)}.</small></button><button onClick={() => setGame(resolveServantChoice(game, false))}><span className="icon-badge"><Moon size={24} /></span><strong>No intervenir</strong><small>La persona elegida será eliminada normalmente.</small></button></div>}
+      {game.phase === 'servant-action' && <div className="decision-cards"><button onClick={() => setGame(resolveServantChoice(game, true))}><span className="icon-badge"><HeartHandshake size={24} /></span><strong>Adoptar el personaje</strong><small>El Ama de Llaves conserva la vida con la carta de {selectedName(game.pendingVoteTargetId)}.</small></button><button onClick={() => setGame(resolveServantChoice(game, false))}><span className="icon-badge"><Moon size={24} /></span><strong>No intervenir</strong><small>La persona elegida será eliminada normalmente.</small></button></div>}
       {game.phase === 'scapegoat-action' && <><PlayerPicker players={alive.filter((player) => player.id !== game.pendingVoteTargetId)} selected={game.scapegoatVoters} onSelect={(id) => setGame({ ...game, scapegoatVoters: game.scapegoatVoters.includes(id) ? game.scapegoatVoters.filter((item) => item !== id) : [...game.scapegoatVoters, id] })} label="Podrán votar la próxima vez" /><div className="game-action"><button className="button button-dark button-large" disabled={!game.scapegoatVoters.length} onClick={() => setGame(resolveScapegoat(game, game.scapegoatVoters))}>Confirmar decisión <ArrowRight size={19} /></button></div></>}
       {game.phase === 'game-over' && <>
         {!isPro && (
@@ -878,7 +878,7 @@ function RoleAction({ game, setGame, roleId, eligibleTargets, targets, updateNig
     </>
   }
   if (roleId === 'infect_father') return <ToggleCard active={game.night.infectVictim} disabled={!game.infectionAvailable || !game.night.wolfTargetId} icon={<Skull size={22} />} title="Infectar a la víctima" text={!game.infectionAvailable ? 'El poder ya se utilizó.' : !game.night.wolfTargetId ? 'La manada todavía no ha elegido víctima.' : game.players.find((player) => player.id === game.night.wolfTargetId)?.roleId === 'elder' && game.elderWolfHits === 0 ? `${selectedName(game.night.wolfTargetId)} es el Anciano: la primera mordedura no le infecta y resistirá el ataque. El poder se gastará.` : `${selectedName(game.night.wolfTargetId)} no morirá y se incorporará en secreto a la manada.`} onClick={() => updateNight({ infectVictim: !game.night.infectVictim })} />
-  if (roleId === 'fierce_wolf') return game.wolfDeathsOccurred ? <RuleCard title="El segundo ataque se ha perdido"><p>Ya ha muerto un Hombre Lobo, el Niño Criado por Lobos o el Perro Mestizo.</p></RuleCard> : <PlayerPicker players={eligibleTargets} selected={game.night.fierceWolfTargetId ? [game.night.fierceWolfTargetId] : []} onSelect={(id) => updateNight({ fierceWolfTargetId: id })} label="Segunda víctima del Lobo Feroz" />
+  if (roleId === 'fierce_wolf') return game.wolfDeathsOccurred ? <RuleCard title="El segundo ataque se ha perdido"><p>Ya ha muerto un Hombre Lobo, el Niño Cambiaformas o el Perro Mestizo.</p></RuleCard> : <PlayerPicker players={eligibleTargets} selected={game.night.fierceWolfTargetId ? [game.night.fierceWolfTargetId] : []} onSelect={(id) => updateNight({ fierceWolfTargetId: id })} label="Segunda víctima del Lobo Feroz" />
   if (roleId === 'albino_wolf' && game.round === 1) return <RuleCard title="Esta noche no actúa solo"><p>Participa con la manada. Su ataque contra otro lobo empieza en la segunda noche y se repite una noche de cada dos.</p></RuleCard>
   if (roleId === 'albino_wolf') return <PlayerPicker players={eligibleTargets} selected={game.night.albinoWolfTargetId ? [game.night.albinoWolfTargetId] : []} onSelect={(id) => updateNight({ albinoWolfTargetId: id })} label="Hombre Lobo eliminado por el Albino" />
   if (roleId === 'protector') return <PlayerPicker players={eligibleTargets} selected={targets} onSelect={(id) => updateNight({ targets: { ...game.night.targets, protector: [id] }, protectedTargetId: id })} label="Persona protegida esta noche" />
@@ -1448,7 +1448,7 @@ function VoteScreen({ game, setGame }: { game: GameState; setGame: (game: GameSt
       ? <RuleCard title={`${sheriffName} desempata como Alguacil`}><p>Su voto vale normal, pero decide quién sale en caso de empate{scapegoatAlive ? ' si no interviene el Cabeza de Turco' : ''}.</p></RuleCard>
       : <RuleCard title={`El voto de ${sheriffName} cuenta doble`}><p>Es el Alguacil de la aldea.</p></RuleCard>
     )}
-    {foolName && <RuleCard title={`${foolName} no vota`}><p>El Tonto del Pueblo ya fue indultado y perdió su derecho a voto.</p></RuleCard>}
+    {foolName && <RuleCard title={`${foolName} no vota`}><p>El Payaso del Pueblo ya fue indultado y perdió su derecho a voto.</p></RuleCard>}
 
     {/* Paso previo 1: Escuela · Institutriz */}
     {headmistress && (

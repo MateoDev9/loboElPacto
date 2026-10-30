@@ -45,7 +45,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
     rules: [
       'Los Hombres Lobo no pueden devorar al Tabernero durante la noche y los habitantes no pueden votar contra él en las votaciones.',
       'Por costumbre, el Tabernero debe anunciar su voto en voz alta antes que el resto de jugadores (salvo que la Institutriz le haya prohibido votar ese día o ya haya perdido su inmunidad).',
-      'Si la persona contra la que ha votado el Tabernero resulta elegida por la aldea para ser eliminada (incluso si luego es indultada por el Noble o es el Tonto), el Tabernero pierde su ficha y su inmunidad para el resto de la partida.',
+      'Si la persona contra la que ha votado el Tabernero resulta elegida por la aldea para ser eliminada (incluso si luego es indultada por el Noble o es el Payaso), el Tabernero pierde su ficha y su inmunidad para el resto de la partida.',
       'Los poderes especiales (veneno de la Bruja, disparo del Cazador, navaja del Barbero, Cuervo o Pirómano) sí pueden afectarle normalmente.',
     ],
     spokenPrompt: '«Antes de que vote la aldea, el Tabernero debe anunciar en voz alta contra quién vota hoy.»',
@@ -80,7 +80,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
     description: 'Una vez por partida, de día, degüella a un propietario de edificio: si no es Lobo, el Barbero también muere.',
     rules: [
       'En cualquier momento del día, el Barbero puede usar su navaja para eliminar inmediatamente al jugador que elija (nunca a un Vagabundo).',
-      'Si el jugador degollado resulta ser un Hombre Lobo (Común, Feroz, Lobo Infectador, Albino, infectado o Niño Criado por Lobos transformado), la aldea felicita al Barbero y conserva la vida.',
+      'Si el jugador degollado resulta ser un Hombre Lobo (Común, Feroz, Lobo Portador de Maldiciones, Albino, infectado o Niño Cambiaformas transformado), la aldea felicita al Barbero y conserva la vida.',
       'En caso contrario, el Barbero también es ejecutado en el acto por su crimen.',
       'Si degüella al Anciano, éste muere en el primer intento (junto con el Barbero) y la aldea pierde sus poderes especiales.',
     ],

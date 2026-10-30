@@ -61,7 +61,7 @@ describe('noche', () => {
     const result = resolveNight(withNight(game, { wolfTargetId: id(game, 2), pyromaniacTargetId: id(game, 2), fierceWolfTargetId: id(game, 0) }))
     expect([0, 1, 2, 3].map((index) => alive(result, index))).toEqual([true, false, true, true])
   })
-  it('la espada oxidada mata al lobo de la izquierda del Caballero la noche siguiente', () => {
+  it('la espada oxidada mata al lobo de la izquierda del Paladín la noche siguiente', () => {
     const game = kill({ ...dealt(['villager', 'werewolf', 'rusty_knight', 'werewolf', 'villager', 'villager']), rustyWolfDeathRound: 1 }, [2])
     const result = resolveNight(game)
     expect(alive(result, 3)).toBe(false)
@@ -90,7 +90,7 @@ describe('votaciones', () => {
     const result = eliminateByVote({ ...game, phase: 'day-vote', roleChoices: { wolf_hound: 'village' } }, id(game, 2))
     expect(result.nightSequence).not.toContain('fierce_wolf')
   })
-  it('si el Tonto es indultado el Juez conserva su poder', () => {
+  it('si el Payaso es indultado el Juez conserva su poder', () => {
     const game = dealt(['werewolf', 'village_fool', 'stuttering_judge', 'villager', 'villager', 'villager'])
     const result = eliminateByVote({ ...game, phase: 'day-vote', judgeSecondVoteRequested: true }, id(game, 1))
     expect(result.judgePowerAvailable).toBe(true)
@@ -98,7 +98,7 @@ describe('votaciones', () => {
   })
 })
 
-describe('Sirvienta Devota', () => {
+describe('Ama de Llaves Fiel', () => {
   const adopt = (roles: RoleId[], patch: Partial<GameState> = {}) => {
     const game = dealt(roles)
     return resolveServantChoice(eliminateByVote({ ...game, ...patch, phase: 'day-vote' }, id(game, 1)), true)
@@ -109,19 +109,19 @@ describe('Sirvienta Devota', () => {
     expect(result.players[2].roleId).toBe('elder')
     expect(result.players[1].roleId).toBe('devoted_servant')
   })
-  it('el Cazador expulsado no dispara si la Sirvienta toma su carta', () => {
+  it('el Cazador expulsado no dispara si el Ama de Llaves toma su carta', () => {
     expect(adopt(['werewolf', 'hunter', 'devoted_servant', 'villager', 'villager', 'villager']).phase).not.toBe('hunter-action')
   })
   it('la nueva Bruja recupera las pociones', () => {
     const result = adopt(['werewolf', 'witch', 'devoted_servant', 'villager', 'villager', 'villager'], { healPotionAvailable: false, poisonPotionAvailable: false })
     expect(result.healPotionAvailable && result.poisonPotionAvailable).toBe(true)
   })
-  it('el nuevo Niño Criado por Lobos elige modelo la noche siguiente', () => {
+  it('el nuevo Niño Cambiaformas elige modelo la noche siguiente', () => {
     const result = adopt(['werewolf', 'wild_child', 'devoted_servant', 'villager', 'villager', 'villager'])
     expect(result.nightSequence).toContain('wild_child')
     expect(result.mentorId).toBeUndefined()
   })
-  it('una Sirvienta enamorada no puede intervenir', () => {
+  it('un Ama de Llaves enamorada no puede intervenir', () => {
     const game = dealt(['werewolf', 'seer', 'devoted_servant', 'villager', 'villager', 'villager'])
     expect(eliminateByVote({ ...game, phase: 'day-vote', lovers: [id(game, 2), id(game, 3)] }, id(game, 1)).phase).not.toBe('servant-action')
   })
@@ -219,14 +219,14 @@ describe('Alguacil', () => {
     const vote = eliminateByVote({ ...game, phase: 'day-vote' }, id(game, 0))
     expect(vote.phase).toBe('game-over')
   })
-  it('el Tonto indultado pierde el cargo para siempre', () => {
+  it('el Payaso indultado pierde el cargo para siempre', () => {
     const game = withSheriff(['werewolf', 'village_fool', 'villager', 'villager', 'villager'], 1)
     const vote = eliminateByVote({ ...game, phase: 'day-vote' }, id(game, 1))
     expect(vote.sheriffId).toBeUndefined()
     expect(vote.sheriffLost).toBe(true)
     expect(canElectSheriff(vote)).toBe(false)
   })
-  it('la Sirvienta que era Alguacil lo pierde al cambiar de carta', () => {
+  it('el Ama de Llaves que era Alguacil lo pierde al cambiar de carta', () => {
     const game = withSheriff(['werewolf', 'seer', 'devoted_servant', 'villager', 'villager', 'villager'], 2)
     const result = resolveServantChoice(eliminateByVote({ ...game, phase: 'day-vote' }, id(game, 1)), true)
     expect(result.sheriffId).toBeUndefined()

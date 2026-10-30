@@ -35,20 +35,20 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     spokenPrompt: '«Que despierte en soledad el Lobo Feroz y señale a su segunda presa…»',
     details: [
       'Despierta y ataca junto al resto de la manada.',
-      'Mientras ningún Hombre Lobo, Niño Criado por Lobos convertido o Perro Mestizo alineado con los lobos haya sido eliminado, despierta una segunda vez a solas para devorar a otra víctima.',
+      'Mientras ningún Hombre Lobo, Niño Cambiaformas convertido o Perro Mestizo alineado con los lobos haya sido eliminado, despierta una segunda vez a solas para devorar a otra víctima.',
       'En cuanto muere el primer lobo de la partida, pierde definitivamente su segundo ataque.',
     ],
   }),
   infect_father: role({
-    id: 'infect_father', name: 'Lobo Infectador', shortName: 'Lobo Infectador', color: '#8f5149', team: 'wolves', category: 'wolves', maxCards: 1, nightOrder: 65, callKind: 'confirm',
+    id: 'infect_father', name: 'Lobo Portador de Maldiciones', shortName: 'Lobo Portador de Maldiciones', color: '#8f5149', team: 'wolves', category: 'wolves', maxCards: 1, nightOrder: 65, callKind: 'confirm',
     description: 'Una vez por partida puede convertir a la víctima en lobo.',
     narratorPrompt: 'Tras dormir la manada, observa si levanta la mano. Si lo hace, la víctima no muere: queda infectada y conserva su poder.',
-    spokenPrompt: '«Los Lobos duermen… Si el Lobo Infectador desea convertir a la víctima en parte de la manada, que alce la mano ahora.»',
+    spokenPrompt: '«Los Lobos duermen… Si el Lobo Portador de Maldiciones desea convertir a la víctima en parte de la manada, que alce la mano ahora.»',
     details: [
       'Despierta y actúa cada noche junto a los demás Hombres Lobo.',
       'Una vez por partida, justo después de que los lobos se duerman, puede levantar la mano para infectar a la víctima elegida en vez de devorarla.',
       'La víctima infectada no muere: se transforma en Hombre Lobo, despierta en los festines nocturnos y conserva su poder original si tenía uno.',
-      'Si infecta al Anciano en su primera herida, éste resiste el mordisco y el poder del Lobo Infectador se agota sin surtir efecto.',
+      'Si infecta al Anciano en su primera herida, éste resiste el mordisco y el poder del Lobo Portador de Maldiciones se agota sin surtir efecto.',
     ],
   }),
   albino_wolf: role({
@@ -171,10 +171,10 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   village_fool: role({
-    id: 'village_fool', name: 'Tonto del Pueblo', shortName: 'Tonto', color: '#d47a69', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
+    id: 'village_fool', name: 'Payaso del Pueblo', shortName: 'Payaso', color: '#d47a69', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
     description: 'Sobrevive al linchamiento, revela su carta y pierde el voto.',
     narratorPrompt: 'Ubícalo. Si la aldea lo expulsa, seguirá vivo pero perderá su derecho a voto.',
-    spokenPrompt: '«Que abra los ojos el Tonto del Pueblo para que lo reconozca…»',
+    spokenPrompt: '«Que abra los ojos el Payaso del Pueblo para que lo reconozca…»',
     details: [
       'Si la aldea vota en su contra para expulsarle, revela su carta: los aldeanos, avergonzados, le indultan en el acto.',
       'Sigue con vida pero pierde su derecho a voto para el resto de la partida.',
@@ -220,7 +220,7 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     details: [
       'Cada mañana, si hay al menos un Hombre Lobo vivo sentado a la izquierda o a la derecha inmediata del Domador, el narrador gruñe imitando al oso.',
       'Si no hay lobos vivos junto a él, el oso permanece en calma.',
-      'Si el Domador es infectado por el Lobo Infectador, el oso gruñe todas las mañanas.',
+      'Si el Domador es infectado por el Lobo Portador de Maldiciones, el oso gruñe todas las mañanas.',
     ],
   }),
   stuttering_judge: role({
@@ -235,13 +235,13 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   rusty_knight: role({
-    id: 'rusty_knight', name: 'Caballero Oxidado', shortName: 'Caballero', color: '#7d7061', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
+    id: 'rusty_knight', name: 'Paladín Oxidado', shortName: 'Paladín', color: '#7d7061', team: 'village', category: 'village', maxCards: 1, callKind: 'confirm', passive: true,
     description: 'Si es devorado, enferma al lobo vivo más cercano a su izquierda.',
-    narratorPrompt: 'Anota quién tiene el Caballero. Si los lobos lo matan, marca al lobo vivo más cercano a su izquierda.',
-    spokenPrompt: '«Que abra los ojos el Caballero Oxidado para que lo reconozca…»',
+    narratorPrompt: 'Anota quién tiene el Paladín. Si los lobos lo matan, marca al lobo vivo más cercano a su izquierda.',
+    spokenPrompt: '«Que abra los ojos el Paladín Oxidado para que lo reconozca…»',
     details: [
       'Si es devorado por los Hombres Lobo, el Hombre Lobo vivo situado más cerca de su izquierda enferma por el óxido.',
-      'Ese lobo sobrevive un día entero y muere a la mañana siguiente del fallecimiento del Caballero.',
+      'Ese lobo sobrevive un día entero y muere a la mañana siguiente del fallecimiento del Paladín.',
     ],
   }),
 
@@ -257,13 +257,13 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   devoted_servant: role({
-    id: 'devoted_servant', name: 'Sirvienta Devota', shortName: 'Sirvienta', color: '#aa728d', team: 'variable', category: 'ambiguous', maxCards: 1, callKind: 'confirm', passive: true,
+    id: 'devoted_servant', name: 'Ama de Llaves Fiel', shortName: 'Ama de Llaves', color: '#aa728d', team: 'variable', category: 'ambiguous', maxCards: 1, callKind: 'confirm', passive: true,
     description: 'Antes de revelar a un linchado puede adoptar su carta.',
-    narratorPrompt: 'Anota quién tiene la Sirvienta. Antes de revelar a una persona expulsada, pregúntale si quiere quedarse con su carta.',
-    spokenPrompt: '«Que abra los ojos la Sirvienta Devota para que la reconozca…»',
+    narratorPrompt: 'Anota quién tiene el Ama de Llaves. Antes de revelar a una persona expulsada, pregúntale si quiere quedarse con su carta.',
+    spokenPrompt: '«Que abra los ojos el Ama de Llaves Fiel para que lo reconozca…»',
     details: [
-      'Antes de revelarse la carta de un jugador linchado por la aldea, la Sirvienta puede mostrar su carta y adoptar el personaje del difunto.',
-      'El expulsado sale con la carta de Sirvienta y ella adquiere el nuevo personaje con todos sus poderes restaurados.',
+      'Antes de revelarse la carta de un jugador linchado por la aldea, el Ama de Llaves puede mostrar su carta y adoptar el personaje del difunto.',
+      'El expulsado sale con la carta del Ama de Llaves y ella adquiere el nuevo personaje con todos sus poderes restaurados.',
       'Si está enamorada, no puede usar su poder de adopción.',
     ],
   }),
@@ -279,14 +279,14 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
     ],
   }),
   wild_child: role({
-    id: 'wild_child', name: 'Niño Criado por Lobos', shortName: 'Niño Criado por Lobos', color: '#527957', team: 'variable', category: 'ambiguous', maxCards: 1, firstNightOrder: 20, callKind: 'one-target',
+    id: 'wild_child', name: 'Niño Cambiaformas', shortName: 'Niño Cambiaformas', color: '#527957', team: 'variable', category: 'ambiguous', maxCards: 1, firstNightOrder: 20, callKind: 'one-target',
     description: 'Elige un mentor; cuando muere, se convierte en lobo.',
     narratorPrompt: 'Pide que señale a su modelo. Si el modelo muere, se incorporará a la manada desde la noche siguiente.',
-    spokenPrompt: '«Que despierte el Niño Criado por Lobos y señale en silencio a quién tomará como modelo…»',
+    spokenPrompt: '«Que despierte el Niño Cambiaformas y señale en silencio a quién tomará como modelo…»',
     details: [
       'La primera noche señala a otro jugador como su modelo a seguir.',
       'Mientras su modelo permanezca vivo, juega como un aldeano ordinario.',
-      'Si su modelo muere, el Niño Criado por Lobos se transforma en Hombre Lobo y despierta con la manada a partir de la noche siguiente.',
+      'Si su modelo muere, el Niño Cambiaformas se transforma en Hombre Lobo y despierta con la manada a partir de la noche siguiente.',
     ],
   }),
   wolf_hound: role({
